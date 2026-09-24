@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 *Fundamentação Teórica:*
 
 *Engenharia e Arquitetura das Soluções:*
@@ -16,3 +17,5 @@ Walter Aurélio:
 *Declaração do Uso de Inteligência Artificial:*
 
 *Conclusão:*
+
+>>>>>>> c19ae3bd3ce1b13f46a28f2d835c3fee0dc900fa
