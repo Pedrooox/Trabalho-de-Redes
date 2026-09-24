@@ -4,7 +4,7 @@
 Explicação do Método 1:  
 Explicação do Método 2:  
 
-**Divisão de Tarefas para cada membro da equipe:**
+**Divisão de Tarefas para cada membro da equipe:**  
 Eduardo Giroto:  
 Pedro Frederico:  
 Nicolas Nakaie:  
