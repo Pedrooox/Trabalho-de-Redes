@@ -1,8 +1,8 @@
 **Fundamentação Teórica:**
 
 **Engenharia e Arquitetura das Soluções:**
-Explicação do Método 1:
-Explicação do Método 2:
+Explicação do Método 1:  
+Explicação do Método 2:  
 
 **Divisão de Tarefas para cada membro da equipe:**
 Eduardo Giroto:  
