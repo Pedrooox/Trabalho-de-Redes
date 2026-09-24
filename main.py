@@ -1,3 +1,9 @@
+"""
+Comunicação Acústica entre Dispositivos - Camada Física (Modelo ISO/OSI)
+Ponto de entrada: escolha do método (1 ou 2) e do modo (transmissor/receptor).
+
+Requisitos: pip install numpy sounddevice
+"""
 
 import sys
 import method1
@@ -28,7 +34,7 @@ def menu():
     elif modo == '2':
         n_chars = int(input("Quantidade de caracteres esperados na mensagem: ").strip())
         if metodo == '1':
-            method1.receber(duracao_estimada_metodo1(n_chars))
+            method1.receber(15.0)
         else:
             method2.receber(n_chars * 16)  # 16 bits (8 dados + 8 CRC) por caractere
     else:

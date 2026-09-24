@@ -1,3 +1,9 @@
+"""
+Método 2 (Livre Escolha) - Modulação FSK + Detecção de erros via CRC-8
+Cada bit vira um tom senoidal de frequência distinta (FSK), permitindo maior
+taxa de transmissão que o Método 1 (baseado em batidas), mantendo confiabilidade via CRC-8.
+"""
+
 import numpy as np
 from common import (SAMPLE_RATE, gerar_tom, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, PREAMBLE_FREQ, PREAMBLE_DUR)
@@ -20,6 +26,7 @@ def crc8(dados_bits):
     return [int(b) for b in format(reg & 0xFF, '08b')]
 
 
+# ---------------- Transmissão ----------------
 
 def montar_quadros(texto):
     """Cada quadro = 8 bits de dados + 8 bits de CRC-8 (16 bits por quadro)."""
@@ -48,6 +55,7 @@ def transmitir(texto):
     print("[MÉTODO 2] Transmissão concluída.")
 
 
+# ---------------- Recepção (demodulação via algoritmo de Goertzel) ----------------
 
 def goertzel_energia(sinal, freq):
     """Estima a energia do sinal na frequência 'freq' (mais leve que uma FFT completa)."""

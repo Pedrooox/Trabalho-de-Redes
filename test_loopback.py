@@ -1,3 +1,9 @@
+"""
+Teste de loopback (sem hardware de áudio): gera o sinal de cada método e
+o decodifica diretamente em memória, sem tocar/gravar de verdade.
+Útil para validar a lógica dos protocolos e para a demonstração/relatório.
+"""
+
 import method1
 import method2
 

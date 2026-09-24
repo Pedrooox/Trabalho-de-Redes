@@ -1,12 +1,20 @@
+"""
+Método 1 (Obrigatório) - Padronizado e Interoperável
+Quadro de 9 bits (8 dados + 1 bit de paridade par), transmitido por impacto sonoro:
+  bit 0 -> silêncio + 1 batida + silêncio
+  bit 1 -> silêncio + 2 batidas consecutivas + silêncio
+"""
+
 import numpy as np
 from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, bit_de_paridade_par,
                      gerar_tom, PREAMBLE_FREQ, PREAMBLE_DUR)
 
-SILENCIO_ENTRE = 0.20    
-GAP_ENTRE_BATIDAS = 0.10
+SILENCIO_ENTRE = 0.20      # s de silêncio antes/depois de cada símbolo (bit)
+GAP_ENTRE_BATIDAS = 0.10   # s de silêncio entre as 2 batidas do bit 1
 
 
+# ---------------- Transmissão ----------------
 
 def montar_quadros(texto):
     """Quebra o texto em quadros de 9 bits (8 bits de dados + 1 bit de paridade par)."""
@@ -42,6 +50,7 @@ def transmitir(texto):
     print("[MÉTODO 1] Transmissão concluída.")
 
 
+# ---------------- Recepção ----------------
 
 def detectar_batidas(sinal, limiar_rel=0.25, dist_min=0.03):
     """Detecção de onset por energia do sinal: retorna os índices (amostras) dos picos (batidas)."""

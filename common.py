@@ -1,8 +1,15 @@
+"""
+Camada Física - Utilitários comuns de áudio
+Comunicação acústica entre dispositivos usando a placa de som (meio: ondas sonoras).
+"""
+
 import numpy as np
 
+# ---------------- Configurações globais ----------------
 SAMPLE_RATE = 44100           # Hz
 CANAIS = 1                    # mono
 
+# Tom de sincronismo (marca o início de uma transmissão para os dois métodos)
 PREAMBLE_FREQ = 3000           # Hz
 PREAMBLE_DUR = 0.25             # s
 
@@ -48,6 +55,7 @@ def gravar(duracao):
     return sinal.flatten()
 
 
+# ---------------- Conversão texto <-> bits ----------------
 
 def texto_para_bits(texto):
     """Converte uma string (UTF-8) em lista de bits (0/1)."""
