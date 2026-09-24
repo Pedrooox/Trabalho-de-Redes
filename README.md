@@ -1,1 +1,1 @@
-Pedrox mega ass
+kill pedro
