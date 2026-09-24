@@ -7,7 +7,7 @@ Explicação do Método 2:
 **Divisão de Tarefas para cada membro da equipe:**  
 Eduardo Giroto:  
 Pedro Frederico:  
-Nicolas Nakaie:  
+Nicolas Nakaie: dar ordens e ser obedecido
 Kaua Lopes:  
 Walter Aurélio:  
 
