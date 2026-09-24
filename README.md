@@ -1,4 +1,4 @@
-**Fundamentação Teórica:**
+**Fundamentação Teórica:**  
 
 **Engenharia e Arquitetura das Soluções:**  
 Explicação do Método 1:  
@@ -8,11 +8,11 @@ Explicação do Método 2:
 Eduardo Giroto:  
 Pedro Frederico:  
 Nicolas Nakaie:  
-Kaua Lopes:  
+Kauã Lopes:  
 Walter Aurélio:  
 
-**Desafios, Problemas e Soluções:**
+**Desafios, Problemas e Soluções:**  
 
-**Declaração do Uso de Inteligência Artificial:**
+**Declaração do Uso de Inteligência Artificial:**  
 
-**Conclusão:**
+**Conclusão:**  
