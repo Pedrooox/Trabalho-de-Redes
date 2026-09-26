@@ -10,8 +10,8 @@ from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, bit_de_paridade_par,
                      gerar_tom, PREAMBLE_FREQ, PREAMBLE_DUR)
 
-SILENCIO_ENTRE = 0.20      # s de silêncio antes/depois de cada símbolo (bit)
-GAP_ENTRE_BATIDAS = 0.10   # s de silêncio entre as 2 batidas do bit 1
+SILENCIO_ENTRE = 1.0      # s de silêncio antes/depois de cada símbolo (bit)
+GAP_ENTRE_BATIDAS = 0.40   # s de silêncio entre as 2 batidas do bit 1
 
 
 # ---------------- Transmissão ----------------
@@ -52,7 +52,7 @@ def transmitir(texto):
 
 # ---------------- Recepção ----------------
 
-def detectar_batidas(sinal, limiar_rel=0.25, dist_min=0.03):
+def detectar_batidas(sinal, limiar_rel=0.15, dist_min=0.25):
     """Detecção de onset por energia do sinal: retorna os índices (amostras) dos picos (batidas)."""
     janela = max(1, int(SAMPLE_RATE * 0.005))
     energia = np.convolve(sinal ** 2, np.ones(janela) / janela, mode='same')
@@ -80,7 +80,7 @@ def agrupar_em_bits(sinal):
     if not batidas:
         return []
     tempos = np.array(batidas) / SAMPLE_RATE
-    limiar_gap = GAP_ENTRE_BATIDAS * 3
+    limiar_gap = 0.60
     slots, atual = [], [tempos[0]]
     for t in tempos[1:]:
         if t - atual[-1] > limiar_gap:
