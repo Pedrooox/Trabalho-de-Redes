@@ -7,11 +7,10 @@ Quadro de 9 bits (8 dados + 1 bit de paridade par), transmitido por impacto sono
 
 import numpy as np
 from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
-                     texto_para_bits, bits_para_texto, bit_de_paridade_par,
-                     gerar_tom, PREAMBLE_FREQ, PREAMBLE_DUR)
+                     texto_para_bits, bits_para_texto, bit_de_paridade_par)
 
-SILENCIO_ENTRE = 0.45      # s de silêncio antes/depois de cada símbolo (bit)
-GAP_ENTRE_BATIDAS = 0.15   # s de silêncio entre as 2 batidas do bit 1
+SILENCIO_ENTRE = 0.50     # s de silêncio antes/depois de cada símbolo (bit)
+GAP_ENTRE_BATIDAS = 0.30   # s de silêncio entre as 2 batidas do bit 1
 
 
 # ---------------- Transmissão ----------------
@@ -39,8 +38,7 @@ def bit_para_audio(bit):
 
 def transmitir(texto):
     quadros = montar_quadros(texto)
-    preambulo = gerar_tom(PREAMBLE_FREQ, PREAMBLE_DUR)
-    partes = [preambulo, gerar_silencio(0.15)]
+    partes = [gerar_silencio(0.15)]
     for quadro in quadros:
         for bit in quadro:
             partes.append(bit_para_audio(bit))
@@ -52,7 +50,7 @@ def transmitir(texto):
 
 # ---------------- Recepção ----------------
 
-def detectar_batidas(sinal, limiar_rel=0.15, dist_min=0.25):
+def detectar_batidas(sinal, limiar_rel=0.05, dist_min=0.10):
     """Detecção de onset por energia do sinal: retorna os índices (amostras) dos picos (batidas)."""
     janela = max(1, int(SAMPLE_RATE * 0.005))
     energia = np.convolve(sinal ** 2, np.ones(janela) / janela, mode='same')
@@ -80,7 +78,7 @@ def agrupar_em_bits(sinal):
     if not batidas:
         return []
     tempos = np.array(batidas) / SAMPLE_RATE
-    limiar_gap = 0.60
+    limiar_gap = 0.40
     slots, atual = [], [tempos[0]]
     for t in tempos[1:]:
         if t - atual[-1] > limiar_gap:

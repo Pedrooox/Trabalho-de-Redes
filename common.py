@@ -30,7 +30,7 @@ def gerar_silencio(duracao):
     return np.zeros(int(SAMPLE_RATE * duracao), dtype=np.float32)
 
 
-def gerar_click(duracao=0.03, amplitude=0.9):
+def gerar_click(duracao=0.07, amplitude=1.0):
     """Gera uma 'batida' curta (ruído de impacto, ex: batida na mesa/palma) para o Método 1."""
     n = int(SAMPLE_RATE * duracao)
     ruido = amplitude * np.random.uniform(-1, 1, n)
