@@ -34,7 +34,7 @@ def menu():
     elif modo == '2':
         n_chars = int(input("Quantidade de caracteres esperados na mensagem: ").strip())
         if metodo == '1':
-            method1.receber(30.0)
+            method1.receber(35.0)
         else:
             method2.receber(n_chars * 16)  # 16 bits (8 dados + 8 CRC) por caractere
     else:

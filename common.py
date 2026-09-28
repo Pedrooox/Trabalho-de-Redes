@@ -31,11 +31,18 @@ def gerar_silencio(duracao):
 
 
 def gerar_click(duracao=0.07, amplitude=1.0):
-    """Gera uma 'batida' curta (ruído de impacto, ex: batida na mesa/palma) para o Método 1."""
+    """Gera um som de batida seca ('toc') simulando impacto em madeira/mesa."""
     n = int(SAMPLE_RATE * duracao)
-    ruido = amplitude * np.random.uniform(-1, 1, n)
-    envelope = np.exp(-np.linspace(0, 12, n))   # decaimento percussivo
-    return (ruido * envelope).astype(np.float32)
+    t = np.linspace(0, duracao, n, endpoint=False)
+    
+    # Frequência caindo rápido de 800Hz para 200Hz para dar o "peso" do impacto
+    freqs = np.linspace(800, 200, n)
+    onda = amplitude * np.sin(2 * np.pi * freqs * t)
+    
+    # Envelope agressivo para estrangular o som e não deixar rastro (eco)
+    envelope = np.exp(-np.linspace(0, 15, n)) 
+    
+    return (onda * envelope).astype(np.float32)
 
 
 def tocar(sinal):
