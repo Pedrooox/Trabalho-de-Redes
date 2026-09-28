@@ -72,6 +72,38 @@ def goertzel_energia(sinal, freq):
     return s_prev2 ** 2 + s_prev ** 2 - coef * s_prev * s_prev2
 
 
+def encontrar_inicio_payload(sinal):
+    tamanho_preambulo = int(SAMPLE_RATE * PREAMBLE_DUR)
+    amostras_silencio = int(SAMPLE_RATE * 0.15)
+    
+    janela_busca = int(SAMPLE_RATE * 0.02)  
+    passo = int(SAMPLE_RATE * 0.002)        
+
+    if len(sinal) < tamanho_preambulo:
+        return 0
+
+    energias = []
+    for i in range(0, len(sinal) - janela_busca, passo):
+        j = sinal[i:i + janela_busca]
+        energias.append((i, goertzel_energia(j, PREAMBLE_FREQ)))
+
+    if not energias:
+        return 0
+
+    max_e = max(e for _, e in energias)
+    if max_e < 0.001:  
+        return 0
+
+    limiar = max_e * 0.4
+    inicio_preambulo = 0
+    for idx, e in energias:
+        if e >= limiar:
+            inicio_preambulo = idx
+            break
+
+    return inicio_preambulo + tamanho_preambulo + amostras_silencio
+
+
 def demodular_bits(sinal, n_bits_esperado):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
     bits = []
@@ -86,31 +118,52 @@ def demodular_bits(sinal, n_bits_esperado):
     return bits
 
 
-def receber(n_bits_esperado):
-    duracao = n_bits_esperado * DURACAO_SIMBOLO + 0.3
+def receber(n_bits_esperado, tempo_gravacao=10.0):
+    duracao = max(tempo_gravacao, n_bits_esperado * DURACAO_SIMBOLO + 2.0)
+    print(f"[GRAVANDO] Ouvindo por {duracao:.1f}s...")
     sinal = gravar(duracao)
-    bits = demodular_bits(sinal, n_bits_esperado)
+
+    inicio = encontrar_inicio_payload(sinal)
+    sinal_alinhado = sinal[inicio:]
+
+    bits = demodular_bits(sinal_alinhado, n_bits_esperado)
     return validar_e_decodificar(bits)
 
 
 def validar_e_decodificar(bits):
     dados_validos = []
-    quadros_ok = quadros_falha = 0
-    i = idx = 0
+    quadros_ok = 0
+    quadros_falha = 0
+    i = 0
+    idx = 0
+
+    # Cria a string com todos os bits recebidos separados por espaço
+    bits_recebidos_str = " ".join(str(b) for b in bits)
+
     while i + 16 <= len(bits):
-        dados, crc_recebido = bits[i:i + 8], bits[i + 8:i + 16]
+        dados = bits[i:i + 8]
+        crc_recebido = bits[i + 8:i + 16]
+        
+        # Verifica se o CRC-8 recebido bate com o calculado
         if crc_recebido == crc8(dados):
             quadros_ok += 1
             dados_validos.extend(dados)
         else:
             quadros_falha += 1
             print(f"[FALHA DE TRANSMISSÃO] Quadro {idx} corrompido (CRC-8 não confere).")
+        
         i += 16
         idx += 1
 
     texto = bits_para_texto(dados_validos) if dados_validos else ""
+    
+    # Exibe a mensagem final incluindo a sequência de bits
     if quadros_falha == 0 and quadros_ok > 0:
-        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r}")
+        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
     else:
-        print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA.")
+        if len(bits) > 0:
+            print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA DE TRANSMISSÃO. | Bits escutados: {bits_recebidos_str}")
+        else:
+            print(f"[RESULTADO] Nenhum bit detectado. {quadros_falha} quadro(s) com FALHA DE TRANSMISSÃO.")
+
     return texto, quadros_ok, quadros_falha
