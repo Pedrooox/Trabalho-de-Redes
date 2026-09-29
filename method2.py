@@ -53,6 +53,7 @@ def transmitir(texto):
           f"({FREQ_BIT0} Hz = bit 0 / {FREQ_BIT1} Hz = bit 1)...")
     tocar(audio)
     print("[MÉTODO 2] Transmissão concluída.")
+    exibir_estatisticas_fsk(texto)
 
 
 # ---------------- Recepção (demodulação via algoritmo de Goertzel) ----------------
@@ -114,3 +115,25 @@ def validar_e_decodificar(bits):
     else:
         print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA.")
     return texto, quadros_ok, quadros_falha
+
+# ---------------- Exibição de Desempenho (bps) ----------------
+
+def exibir_estatisticas_fsk(texto_enviado):
+    num_caracteres = len(texto_enviado)
+    num_bits_dados = num_caracteres * 8
+    
+    bits_por_quadro = 16  # 8 bits dados + 8 bits CRC-8
+    
+    # Tempo total = Preâmbulo + Silêncio de pausa (0.15s) + Bits de dados/CRC
+    tempo_overhead = PREAMBLE_DUR + 0.15
+    tempo_dados_crc = num_caracteres * bits_por_quadro * DURACAO_SIMBOLO
+    tempo_total = tempo_overhead + tempo_dados_crc
+    
+    bps_bruto = 1 / DURACAO_SIMBOLO
+    bps_util = num_bits_dados / tempo_total if tempo_total > 0 else 0
+
+    print("\n--- RESUMO DE DESEMPENHO (MÉTODO 2 - FSK) ---")
+    print(f"Velocidade do Canal (Bruta): {bps_bruto:.1f} bps")
+    print(f"Tempo Total de Transmissão: {tempo_total:.2f} s")
+    print(f"Velocidade Efetiva (Dados):  {bps_util:.2f} bps")
+    print("--------------------------------------------\n")

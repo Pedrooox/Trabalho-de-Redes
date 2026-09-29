@@ -23,8 +23,8 @@ def menu():
     modo = input("Escolha o modo [1/2]: ").strip()
 
     print("\nMétodo:")
-    print("1) Método 1 - Obrigatório (batidas sonoras, quadro de 9 bits, paridade)")
-    print("2) Método 2 - Livre escolha (FSK + CRC-8)")
+    print("1) Método 1 - (batidas sonoras, paridade)")
+    print("2) Método 2 - (FSK + CRC-8)")
     metodo = input("Escolha o método [1/2]: ").strip()
 
     if modo == '1':
