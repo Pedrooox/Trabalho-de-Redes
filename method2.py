@@ -88,7 +88,7 @@ def demodular_bits(sinal, n_bits_esperado):
 
 
 def receber(n_bits_esperado):
-    duracao = n_bits_esperado * DURACAO_SIMBOLO + 0.3
+    duracao = n_bits_esperado * DURACAO_SIMBOLO + 1.0
     sinal = gravar(duracao)
     bits = demodular_bits(sinal, n_bits_esperado)
     return validar_e_decodificar(bits)
@@ -98,6 +98,10 @@ def validar_e_decodificar(bits):
     dados_validos = []
     quadros_ok = quadros_falha = 0
     i = idx = 0
+    
+    # 1. Transforma a lista de bits [0, 1, 0...] numa string legível "010..."
+    bits_recebidos_str = "".join(str(b) for b in bits)
+
     while i + 16 <= len(bits):
         dados, crc_recebido = bits[i:i + 8], bits[i + 8:i + 16]
         if crc_recebido == crc8(dados):
@@ -110,10 +114,16 @@ def validar_e_decodificar(bits):
         idx += 1
 
     texto = bits_para_texto(dados_validos) if dados_validos else ""
+    
+    # 2. Adiciona os bits na mensagem final
     if quadros_falha == 0 and quadros_ok > 0:
-        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r}")
+        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
     else:
-        print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA.")
+        if len(bits) > 0:
+            print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA. | Bits: {bits_recebidos_str}")
+        else:
+            print(f"[RESULTADO] Nenhum bit detectado.")
+
     return texto, quadros_ok, quadros_falha
 
 # ---------------- Exibição de Desempenho (bps) ----------------
@@ -129,11 +139,10 @@ def exibir_estatisticas_fsk(texto_enviado):
     tempo_dados_crc = num_caracteres * bits_por_quadro * DURACAO_SIMBOLO
     tempo_total = tempo_overhead + tempo_dados_crc
     
-    bps_bruto = 1 / DURACAO_SIMBOLO
+    
     bps_util = num_bits_dados / tempo_total if tempo_total > 0 else 0
 
     print("\n--- RESUMO DE DESEMPENHO (MÉTODO 2 - FSK) ---")
-    print(f"Velocidade do Canal (Bruta): {bps_bruto:.1f} bps")
     print(f"Tempo Total de Transmissão: {tempo_total:.2f} s")
-    print(f"Velocidade Efetiva (Dados):  {bps_util:.2f} bps")
+    print(f"Velocidade Efetiva:  {bps_util:.2f} bps")
     print("--------------------------------------------\n")
