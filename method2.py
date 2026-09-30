@@ -47,10 +47,11 @@ def bits_para_audio(bits):
 def transmitir(texto):
     quadros = montar_quadros(texto)
     todos_bits = [b for q in quadros for b in q]
-    preambulo = gerar_tom(PREAMBLE_FREQ, PREAMBLE_DUR)
-    audio = np.concatenate([preambulo, gerar_silencio(0.15), bits_para_audio(todos_bits)])
-    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via FSK "
-          f"({FREQ_BIT0} Hz = bit 0 / {FREQ_BIT1} Hz = bit 1)...")
+    
+    # Gera diretamente o áudio com as frequências FSK (1200/2200 Hz)
+    audio = bits_para_audio(todos_bits)
+    
+    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via FSK...")
     tocar(audio)
     print("[MÉTODO 2] Transmissão concluída.")
     exibir_estatisticas_fsk(texto)
@@ -87,10 +88,46 @@ def demodular_bits(sinal, n_bits_esperado):
     return bits
 
 
+def encontrar_inicio_fsk(sinal):
+    janela = int(SAMPLE_RATE * 0.01)  # Janela de 10ms
+    passo = int(SAMPLE_RATE * 0.002)  # Avança de 2 em 2ms
+    
+    # Descobre o nível de ruído da sala no início da gravação
+    energias = []
+    for i in range(0, min(len(sinal) - janela, int(SAMPLE_RATE * 0.5)), passo):
+        trecho = sinal[i:i + janela]
+        e0 = goertzel_energia(trecho, FREQ_BIT0)
+        e1 = goertzel_energia(trecho, FREQ_BIT1)
+        energias.append(max(e0, e1))
+    
+    ruido_fundo = np.mean(energias) if energias else 0.0001
+    limiar_deteccao = max(ruido_fundo * 5, 0.001)
+
+    # Varre o áudio procurando o primeiro som de 1200Hz ou 2200Hz
+    for i in range(0, len(sinal) - janela, passo):
+        trecho = sinal[i:i + janela]
+        e0 = goertzel_energia(trecho, FREQ_BIT0)
+        e1 = goertzel_energia(trecho, FREQ_BIT1)
+        
+        if max(e0, e1) > limiar_deteccao:
+            return i
+
+    return 0
+
+
 def receber(n_bits_esperado):
-    duracao = n_bits_esperado * DURACAO_SIMBOLO + 1.0
+    duracao = n_bits_esperado * DURACAO_SIMBOLO + 2.0
     sinal = gravar(duracao)
-    bits = demodular_bits(sinal, n_bits_esperado)
+    
+    # 1. Encontra o milissegundo exato onde a transmissão física começou
+    inicio = encontrar_inicio_fsk(sinal)
+    
+    # 2. Desloca para o centro do bit (0.025s) para evitar bordas e ruídos
+    offset_centro = int(SAMPLE_RATE * (DURACAO_SIMBOLO / 2))
+    sinal_alinhado = sinal[inicio + offset_centro:]
+    
+    # 3. Lê os dados a partir do ponto alinhado
+    bits = demodular_bits(sinal_alinhado, n_bits_esperado)
     return validar_e_decodificar(bits)
 
 
