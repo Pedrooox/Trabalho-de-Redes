@@ -92,10 +92,15 @@ def agrupar_em_bits(sinal):
     return [0 if len(s) == 1 else 1 for s in slots]
 
 
-def receber(duracao_estim):
-    sinal = gravar(duracao_estim)
+def receber():
+    sinal = gravar() # Grava até o utilizador pressionar ENTER
     bits = agrupar_em_bits(sinal)
-    print(f"[MÉTODO 1] {len(bits)} bit(s)/símbolo(s) detectado(s).")
+    
+    # Transforma a lista numa string e imprime na tela imediatamente
+    bits_str = "".join(str(b) for b in bits)
+    print(f"\n[DEMODULAÇÃO - MÉTODO 1] Foram lidos {len(bits)} bits.")
+    print(f"Bits brutos capturados: {bits_str}\n")
+    
     return validar_e_decodificar(bits)
 
 

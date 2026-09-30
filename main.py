@@ -10,12 +10,6 @@ import method1
 import method2
 
 
-def duracao_estimada_metodo1(n_caracteres):
-    n_bits = n_caracteres * 9  # 9 bits por caractere (8 dados + 1 paridade)
-    tempo_simbolo_pior_caso = (method1.SILENCIO_ENTRE * 2 + 0.03 * 2 + method1.GAP_ENTRE_BATIDAS)
-    return n_bits * tempo_simbolo_pior_caso + 1.0
-
-
 def menu():
     print("=== Comunicação Acústica - Camada Física ===")
     print("1) Transmitir mensagem")
@@ -32,11 +26,10 @@ def menu():
         (method1 if metodo == '1' else method2).transmitir(texto)
 
     elif modo == '2':
-        n_chars = int(input("Quantidade de caracteres esperados na mensagem: ").strip())
         if metodo == '1':
-            method1.receber(22.0)
+            method1.receber()
         else:
-            method2.receber(n_chars * 16)  # 16 bits (8 dados + 8 CRC) por caractere
+            method2.receber()
     else:
         print("Opção inválida.")
         sys.exit(1)

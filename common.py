@@ -2,7 +2,10 @@
 Camada Física - Utilitários comuns de áudio
 Comunicação acústica entre dispositivos usando a placa de som (meio: ondas sonoras).
 """
-
+import queue
+import sys
+import sounddevice as sd
+import numpy as np
 import numpy as np
 
 # ---------------- Configurações globais ----------------
@@ -45,14 +48,26 @@ def tocar(sinal):
     sd.wait()
 
 
-def gravar(duracao):
-    """Grava 'duracao' segundos do microfone padrão."""
-    import sounddevice as sd
-    print(f"[GRAVANDO] Ouvindo por {duracao:.1f}s...")
-    sinal = sd.rec(int(duracao * SAMPLE_RATE), samplerate=SAMPLE_RATE,
-                    channels=CANAIS, dtype='float32')
-    sd.wait()
-    return sinal.flatten()
+def gravar():
+    """Grava o áudio do microfone continuamente até o usuário pressionar ENTER."""
+    q = queue.Queue()
+    
+    def callback(indata, frames, time, status):
+        if status:
+            print(status, file=sys.stderr)
+        q.put(indata.copy())
+        
+    print("[GRAVANDO] Pressione ENTER para parar a gravação...")
+    # Abre o fluxo contínuo de áudio
+    with sd.InputStream(samplerate=SAMPLE_RATE, channels=CANAIS, dtype='float32', callback=callback):
+        input()  # O programa bloqueia aqui até a tecla ENTER ser pressionada
+        
+    # Agrupa os blocos de áudio gravados na fila
+    dados = []
+    while not q.empty():
+        dados.append(q.get())
+        
+    return np.concatenate(dados).flatten()
 
 
 # ---------------- Conversão texto <-> bits ----------------

@@ -74,10 +74,13 @@ def goertzel_energia(sinal, freq):
     return s_prev2 ** 2 + s_prev ** 2 - coef * s_prev * s_prev2
 
 
-def demodular_bits(sinal, n_bits_esperado):
+def demodular_bits(sinal):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
+    # Calcula quantos bits cabem no áudio gravado
+    n_bits = len(sinal) // amostras_por_simbolo 
+    
     bits = []
-    for i in range(n_bits_esperado):
+    for i in range(n_bits):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
         if len(janela) < amostras_por_simbolo:
@@ -115,19 +118,15 @@ def encontrar_inicio_fsk(sinal):
     return 0
 
 
-def receber(n_bits_esperado):
-    duracao = n_bits_esperado * DURACAO_SIMBOLO + 2.0
-    sinal = gravar(duracao)
+def receber():
+    sinal = gravar() # Chama sem parâmetros
     
-    # 1. Encontra o milissegundo exato onde a transmissão física começou
     inicio = encontrar_inicio_fsk(sinal)
-    
-    # 2. Desloca para o centro do bit (0.025s) para evitar bordas e ruídos
     offset_centro = int(SAMPLE_RATE * (DURACAO_SIMBOLO / 2))
     sinal_alinhado = sinal[inicio + offset_centro:]
     
-    # 3. Lê os dados a partir do ponto alinhado
-    bits = demodular_bits(sinal_alinhado, n_bits_esperado)
+    # Chama a demodulação com o sinal já alinhado
+    bits = demodular_bits(sinal_alinhado)
     return validar_e_decodificar(bits)
 
 
