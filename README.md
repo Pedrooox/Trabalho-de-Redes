@@ -1,8 +1,20 @@
 **Fundamentação Teórica:**  
 
 **Engenharia e Arquitetura das Soluções:**  
+Explicação Geral:
+    
+     O trabalho tem como objetivo a compressão da Camada Física do modelo ISO/OSI utilizando ondas sonoras para
+     transmitir informações binárias entre dispositivos, como pré requisitos, o código exige, não só a instalação do Python na máquina, como também a instalação de duas bibliotecas, NumPy (para manipulação de arrays e processamento digital de sinais) e SoundDevice (para reprodução e gravação de áudio via placa de som).
+
 Explicação do Método 1:  
+   
+    O 'Método 1', como solicitado, traz uma abordagem mais simples e padronizada, baseada em impactos sonoros (batida de palmas, batida com a mão em alguma superfície, sons com a boca, etc.) onde o caractere é transmitido em quadros de 9 bits. Para o algoritmo, uma batida representa 0, e duas batidas consecutivas 1, ele recebe as batidas dentro do intervalo de tempo e valida a paridade de cada quadro de 9 bits para garantir que a mensagem não foi corrompida pelo ruído do ambiente. 
+
 Explicação do Método 2:  
+
+    No 'Método 2', o texto é dividido em quadros de 16 bits, com 8 bits de dados e 8 de verificação redundante CRC-8. A transmissão inicia em 3000 Hz para sincronização, seguido por tons de 1200 Hz para o bit 0 e 2200 Hz para o bit 1, tendo 0,05 segundos de duração por símbolo. 
+    Para a recepção, a energia das frequências alvo é calculada para localizar o ponto exato de início da mensagem, finalizando com o recalculo do CRC-8.
+    o CRC-8 (Cyclic Redundancy Check de 8 bits) serve para detectar erros de transmissão em sistemas de comunição e armazenamento de dados.
 
 **Divisão de Tarefas para cada membro da equipe:**  
 Eduardo Giroto:  
