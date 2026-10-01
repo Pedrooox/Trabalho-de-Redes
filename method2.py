@@ -8,8 +8,8 @@ import numpy as np
 from common import (SAMPLE_RATE, gerar_tom, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, PREAMBLE_FREQ, PREAMBLE_DUR)
 
-FREQ_BIT0 = 1200         # Hz
-FREQ_BIT1 = 2200         # Hz
+FREQ_BIT0 = 2000         # Hz
+FREQ_BIT1 = 3500         # Hz
 DURACAO_SIMBOLO = 0.05   # s por bit (bem mais rápido que o Método 1)
 BITS_CRC = 8
 

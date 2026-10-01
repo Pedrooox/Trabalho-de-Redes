@@ -17,7 +17,7 @@ PREAMBLE_FREQ = 3000           # Hz
 PREAMBLE_DUR = 0.25             # s
 
 
-def gerar_tom(freq, duracao, amplitude=0.8, fade=0.003):
+def gerar_tom(freq, duracao, amplitude=0.6, fade=0.003):
     """Gera um tom senoidal puro com fade in/out para evitar estalos (cliques) indesejados."""
     t = np.linspace(0, duracao, int(SAMPLE_RATE * duracao), endpoint=False)
     onda = amplitude * np.sin(2 * np.pi * freq * t)
@@ -33,7 +33,7 @@ def gerar_silencio(duracao):
     return np.zeros(int(SAMPLE_RATE * duracao), dtype=np.float32)
 
 
-def gerar_click(duracao=0.03, amplitude=0.9):
+def gerar_click(duracao=0.03, amplitude=1.0):
     """Gera uma 'batida' curta (ruído de impacto, ex: batida na mesa/palma) para o Método 1."""
     n = int(SAMPLE_RATE * duracao)
     ruido = amplitude * np.random.uniform(-1, 1, n)

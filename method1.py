@@ -7,11 +7,10 @@ Quadro de 9 bits (8 dados + 1 bit de paridade par), transmitido por impacto sono
 
 import numpy as np
 from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
-                     texto_para_bits, bits_para_texto, bit_de_paridade_par,
-                     gerar_tom, PREAMBLE_FREQ, PREAMBLE_DUR)
+                     texto_para_bits, bits_para_texto, bit_de_paridade_par)
 
-SILENCIO_ENTRE = 1.0      # s de silêncio antes/depois de cada símbolo (bit)
-GAP_ENTRE_BATIDAS = 0.40   # s de silêncio entre as 2 batidas do bit 1
+SILENCIO_ENTRE = 0.18      # s de silêncio antes/depois de cada símbolo (bit)
+GAP_ENTRE_BATIDAS = 0.12   # s de silêncio entre as 2 batidas do bit 1
 
 
 # ---------------- Transmissão ----------------
@@ -39,8 +38,8 @@ def bit_para_audio(bit):
 
 def transmitir(texto):
     quadros = montar_quadros(texto)
-    preambulo = gerar_tom(PREAMBLE_FREQ, PREAMBLE_DUR)
-    partes = [preambulo, gerar_silencio(0.15)]
+    
+    partes = [gerar_silencio(0.15)]
     for quadro in quadros:
         for bit in quadro:
             partes.append(bit_para_audio(bit))
@@ -121,9 +120,16 @@ def validar_e_decodificar(bits):
         i += 9
         idx += 1
 
+    bits_sobrando = len(bits) - i
+    if bits_sobrando > 0:
+        bits_faltantes = 9 - bits_sobrando
+        print(f"[AVISO] O quadro {idx + 1} não está completo (faltam {bits_faltantes} bits).")
+
     texto = bits_para_texto(dados_validos) if dados_validos else ""
     if quadros_falha == 0 and quadros_ok > 0:
         print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r}")
+    elif quadros_ok > 0:
+        print(f"[RESULTADO PARCIAL] {quadros_ok} quadro(s) OK. Mensagem interceptada: {texto!r}")
     else:
         print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA.")
     return texto, quadros_ok, quadros_falha
