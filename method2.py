@@ -149,11 +149,20 @@ def validar_e_decodificar(bits):
         i += 16
         idx += 1
 
+    # --- LÓGICA DE QUADRO INCOMPLETO (MÉTODO 2: 16 BITS) ---
+    bits_sobrando = len(bits) - i
+    if bits_sobrando > 0:
+        bits_faltantes = 16 - bits_sobrando
+        print(f"[AVISO] O quadro {idx + 1} não está completo (faltam {bits_faltantes} bits).")
+
     texto = bits_para_texto(dados_validos) if dados_validos else ""
     
     # 2. Adiciona os bits na mensagem final
     if quadros_falha == 0 and quadros_ok > 0:
         print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
+    elif quadros_ok > 0:
+        # Mostra o que conseguiu decodificar mesmo com falhas ou quadros incompletos
+        print(f"[RESULTADO PARCIAL] {quadros_ok} quadro(s) OK. Mensagem interceptada: {texto!r} | Bits: {bits_recebidos_str}") 
     else:
         if len(bits) > 0:
             print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA. | Bits: {bits_recebidos_str}")
