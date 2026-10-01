@@ -122,8 +122,7 @@ def receber():
     sinal = gravar() # Chama sem parâmetros
     
     inicio = encontrar_inicio_fsk(sinal)
-    offset_centro = int(SAMPLE_RATE * (DURACAO_SIMBOLO / 2))
-    sinal_alinhado = sinal[inicio + offset_centro:]
+    sinal_alinhado = sinal[inicio:]
     
     # Chama a demodulação com o sinal já alinhado
     bits = demodular_bits(sinal_alinhado)
