@@ -35,11 +35,13 @@ Walter Aurélio:
 
 **Desafios, Problemas e Soluções:**  
     Validação e Deteção de Corrupção de Dados (Paridade)
-Problema: Ruidos acusticos indesejados como cliques de teclado e ecos do recinto podiam inverter ou atrapalhar do receptor de intender.
-Solucao: como a funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit pariedade. O algoritmo calcula se a quantidade de bits '1' é par. caso algum bit seje perdido ou trocado a pariedade identificao erro e retorna que o quadro esta corrompido o que impede que seje retornado uma mensagem errada. 
+Problema: Ruidos acusticos indesejados, como cliques de teclado e ecos no recinto podiam inverter bits ou dificultar a interpretação pelo receptor.
+Solução: A funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit reservado para a pariedade. O algoritmo calcula se a quantidade de bits '1' é par. Caso algum bit seje perdido ou invertido, o calculo de pariedade identifica o erro e retorna que o quadro está corrompido. Isso impede que seje exibida uma mensagem errada. 
+
     Tratamento de quadors incompletos
-Preoblewma: caso a gravacao fosse interrompida ou desse erro por causa de ruido, causava desalinhamento de quadros de bits, o que causava problemas ao tentar converter os bytes incompleto.
-Solucao: Foi impplementado uma logica de validacao parcial nos dois metodos, o codigo contabiliza os quadros integros e transcreve a mesnsagem e retorna os bits contaabilizado, ate le chegar nos quadros que estao inompletos, com isso retornava o possivel erro desses quadros.
+Problema: Caso a gravacao fosse interrompida ou desse erro por causa de ruido, ocorria um desalinhamento na contagem dos bits, o que causava problemas ao tentar converter os bytes incompletos.
+Solução: Foi implementada uma lógica de validação parcial nos dois metodos. O código agora contabiliza os quadros íntegros e transcreve a mesnsagem (caracter e bits) obtida até o limite válido. Ao chegar nos quadros corrompidos o sistema um aviso detalhando o erro e indincando a quantidade de bits que faltaram para fechar o quadro. 
+
 **Declaração do Uso de Inteligência Artificial:**  
 
 **Conclusão:**  
