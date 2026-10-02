@@ -34,7 +34,12 @@ Kauã Lopes:
 Walter Aurélio:  
 
 **Desafios, Problemas e Soluções:**  
-
+    Validação e Deteção de Corrupção de Dados (Paridade)
+Problema: Ruidos acusticos indesejados como cliques de teclado e ecos do recinto podiam inverter ou atrapalhar do receptor de intender.
+Solucao: como a funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit pariedade. O algoritmo calcula se a quantidade de bits '1' é par. caso algum bit seje perdido ou trocado a pariedade identificao erro e retorna que o quadro esta corrompido o que impede que seje retornado uma mensagem errada. 
+    Tratamento de quadors incompletos
+Preoblewma: caso a gravacao fosse interrompida ou desse erro por causa de ruido, causava desalinhamento de quadros de bits, o que causava problemas ao tentar converter os bytes incompleto.
+Solucao: Foi impplementado uma logica de validacao parcial nos dois metodos, o codigo contabiliza os quadros integros e transcreve a mesnsagem e retorna os bits contaabilizado, ate le chegar nos quadros que estao inompletos, com isso retornava o possivel erro desses quadros.
 **Declaração do Uso de Inteligência Artificial:**  
 
 **Conclusão:**  
