@@ -13,8 +13,11 @@ Aplicação: Funciona como uma interface com o usuario (software) e a rede.
 ## Camada Física
 
 A Camada Física é a primeira camada do modelo OSI, sendo a base de toda a comunicação de rede. Ela é responsável pela transmissão e recepção de um fluxo de bits brutos não estruturados através de um meio de comunicação físico.
+
 Sinais Analógicos vs. Digitais: O sinal analógico varia de forma contínua ao longo do tempo e pode assumir infinitos valores de amplitude dentro de um intervalo. Propaga-se em forma de ondas contínuas. Com tudo, o sinal digital é discreto e não contínuo, assumindo apenas um conjunto finito de valores previamente definidos (geralmente dois estados, 0 e 1, representados por transições abruptas de tensão elétrica, luz ou frequência).
+
 Largura de Banda: Em telecomunicações e na física de redes, refere-se à diferença entre as frequências mais alta e mais baixa que um canal de comunicação suporta e consegue transmitir sem degradação excessiva, sendo medida em Hertz (Hz). A largura de banda determina a capacidade máxima de transporte de dados do meio.
+
 Modulação: É o processo de alterar uma ou mais características de uma onda periódica (chamada de onda portadora) com um sinal modulador que contém a informação real. Ao variar propriedades como amplitude, frequência ou fase, a modulação permite adequar o sinal para que ele viaje longas distâncias pelo meio físico sem perder sua integridade.
 
 ## Detecção de Erros
@@ -22,9 +25,9 @@ Modulação: É o processo de alterar uma ou mais características de uma onda p
 Mesmo que a verificação da integridade dos bits seja uma função da Camada de Enlace, ela foi implementada nesse projeto para ajudar a entender e identificar os possiveis erros de transmissão. Para isso fo utilizado. Paridade Par no Método 1.
 Crc-8 no Método 2
 
-Explicação Geral:
+## Pré-requisitos
     
-como pré requisitos, o código exige, não só a instalação do Python na máquina, como também a instalação de duas bibliotecas, NumPy (para manipulação de arrays e processamento digital de sinais) e SoundDevice (para reprodução e gravação de áudio via placa de som).
+O código exige o interpretador Python instalado e as bibliotecas `numpy` (para manipulação de arrays e processamento digital de sinais) e `sounddevice` (para reprodução e gravação de áudio via interface de som).
 
 Explicação do Método 1:  
    
