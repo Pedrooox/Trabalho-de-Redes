@@ -22,32 +22,36 @@ Modulação: É o processo de alterar uma ou mais características de uma onda p
 
 ## Detecção de Erros
 
-Mesmo que a verificação da integridade dos bits seja uma função da Camada de Enlace, ela foi implementada nesse projeto para ajudar a entender e identificar os possiveis erros de transmissão. Para isso fo utilizado. Paridade Par no Método 1.
+Mesmo que a verificação da integridade dos bits seja uma função da Camada de Enlace, ela foi implementada nesse projeto para ajudar a entender e identificar os possiveis erros de transmissão. Para isso fo utilizado. Paridade Par no Método 1, que funciona com base nos 9 primeiros bits onde ele verifica se no total de bits 1 tem par.
 Crc-8 no Método 2
 
 ## Pré-requisitos
     
 O código exige o interpretador Python instalado e as bibliotecas `numpy` (para manipulação de arrays e processamento digital de sinais) e `sounddevice` (para reprodução e gravação de áudio via interface de som).
 
-Explicação do Método 1:  
+## Explicação do Método 1:  
    
-O 'Método 1', como solicitado, traz uma abordagem mais simples e padronizada, baseada em impactos sonoros (batida de palmas, batida com a mão em alguma superfície, sons com a boca, etc.) onde o caractere é transmitido em quadros de 9 bits. Para o algoritmo, uma batida representa 0, e duas batidas consecutivas 1, ele recebe as batidas dentro do intervalo de tempo e valida a paridade de cada quadro de 9 bits para garantir que a mensagem não foi corrompida pelo ruído do ambiente. 
+O 'Método 1', como solicitado, traz uma abordagem mais simples e padronizada, baseada em impactos sonoros (batida de palmas, batida com a mão em alguma superfície, sons com a boca, etc.) onde a mensagem é transmitido em quadros de 9 bits. Para o algoritmo, uma batida representa 0, e duas batidas consecutivas 1, ele recebe as batidas dentro do intervalo de tempo e valida a paridade de cada quadro de 9 bits para garantir que a mensagem não foi corrompida pelo ruído do ambiente. 
 
-Utilização - Transmissão: O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'.
+### Utilização - Transmissão
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'.
 'Digite a mensagem a transmitir' será exibido no terminal, basta digitar a mensagem e pressionar Enter, e então a transmissão será iniciada.
 
-Utilização - Recepção: O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
+### Utilização - Recepção
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
 
-Explicação do Método 2:  
+## Explicação do Método 2:  
 
-No 'Método 2', o texto é dividido em quadros de 16 bits, com 8 bits de dados e 8 de verificação redundante CRC-8. A transmissão inicia em 3000 Hz para sincronização, seguido por tons de 1200 Hz para o bit 0 e 2200 Hz para o bit 1, tendo 0,05 segundos de duração por símbolo. 
-Para a recepção, a energia das frequências alvo é calculada para localizar o ponto exato de início da mensagem, finalizando com o recalculo do CRC-8.
-O CRC-8 (Cyclic Redundancy Check de 8 bits) serve para detectar erros de transmissão em sistemas de comunição e armazenamento de dados.
+No 'Método 2', é utilizada uma abordagem mais avançada para a transmissão de dados. Aplica-se a técnica de modulação FSK (Frequency-Shift Keying), utilizando tons de 2000 Hz para representar o bit 0 e 3500 Hz para o bit 1, com 0,04 segundos de duração por símbolo. O texto é dividido em quadros de 16 bits, sendo 8 bits de dados e 8 bits de verificação de redundância cíclica (CRC-8).
+Na recepção, a energia das frequências-alvo é calculada para localizar o ponto exato de início da mensagem, finalizando com o recálculo do CRC-8.
+O algoritmo CRC-8 (Cyclic Redundancy Check de 8 bits) recebe o quadro de 16 bits, separa os 8 bits de dados e refaz a divisão polinomial. Se o resto da divisão for zero, significa que os dados não sofreram interferência. Caso contrário, a validação matemática falha e o sistema descarta o quadro corrompido. 
 
-Utilização - Transmissão: O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'.
+### Utilização - Transmissão
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'.
 'Digite a mensagem a transmitir' será exibido no terminal, basta digitar a mensagem e pressionar Enter, e então a transmissão será iniciada, utilizando 8 bits via FSK, 2000 Hz para bit 0 e 3200 Hz para bit 1.
 
-Utilização - Recepção: O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
+### Utilização - Recepção
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
 
 **Divisão de Tarefas para cada membro da equipe:**  
 Eduardo Giroto:  
@@ -56,12 +60,12 @@ Nicolas Nakaie:
 Kauã Lopes:  
 Walter Aurélio:  
 
-**Desafios, Problemas e Soluções:**  
-    Validação e Deteção de Corrupção de Dados (Paridade)
+## Desafios, Problemas e Soluções:  
+### Validação e Deteção de Corrupção de Dados (Paridade)
 Problema: Ruidos acusticos indesejados, como cliques de teclado e ecos no recinto podiam inverter bits ou dificultar a interpretação pelo receptor.
 Solução: A funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit reservado para a pariedade. O algoritmo calcula se a quantidade de bits '1' é par. Caso algum bit seje perdido ou invertido, o calculo de pariedade identifica o erro e retorna que o quadro está corrompido. Isso impede que seje exibida uma mensagem errada. 
 
-    Tratamento de quadors incompletos
+### Tratamento de quadors incompletos
 Problema: Caso a gravacao fosse interrompida ou desse erro por causa de ruido, ocorria um desalinhamento na contagem dos bits, o que causava problemas ao tentar converter os bytes incompletos.
 Solução: Foi implementada uma lógica de validação parcial nos dois metodos. O código agora contabiliza os quadros íntegros e transcreve a mesnsagem (caracter e bits) obtida até o limite válido. Ao chegar nos quadros corrompidos o sistema um aviso detalhando o erro e indincando a quantidade de bits que faltaram para fechar o quadro. 
 
