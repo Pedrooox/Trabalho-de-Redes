@@ -127,7 +127,17 @@ def demodular_bits(sinal):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
     bits = []
     
-    # Tolerância muito baixa apenas para não decodificar silêncio absoluto
+    # 1. Estimar a energia do FSK usando os primeiros bits para um limiar adaptativo
+    energias = []
+    limite = min(len(sinal), amostras_por_simbolo * 8)
+    for i in range(0, limite, amostras_por_simbolo):
+        j = sinal[i:i + amostras_por_simbolo]
+        if len(j) == amostras_por_simbolo:
+            energias.append(max(goertzel_energia(j, FREQ_BIT0), goertzel_energia(j, FREQ_BIT1)))
+            
+    limiar_silencio = max(energias) * 0.15 if energias else 0.0001
+    silence_count = 0
+    
     for i in range(len(sinal) // amostras_por_simbolo):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
@@ -137,10 +147,18 @@ def demodular_bits(sinal):
         e0 = goertzel_energia(janela, FREQ_BIT0)
         e1 = goertzel_energia(janela, FREQ_BIT1)
         
-        if max(e0, e1) < 1e-6:
-            break
+        # Se detectamos energia muito baixa, assumimos que a transmissão acabou
+        if max(e0, e1) < limiar_silencio:
+            silence_count += 1
+            if silence_count >= 3:
+                # Remove os bits espúrios (ruído de silêncio) já adicionados
+                bits = bits[:-2]
+                break
+        else:
+            silence_count = 0
             
         bits.append(1 if e1 > e0 else 0)
+        
     return bits
 
 
