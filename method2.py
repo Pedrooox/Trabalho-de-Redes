@@ -124,7 +124,14 @@ def demodular_bits(sinal):
 
 
 def receber():
-    sinal = gravar()
+    def live_decode(sinal):
+        inicio = encontrar_inicio_payload(sinal)
+        if inicio == 0 or inicio >= len(sinal):
+            return []
+        sinal_alinhado = sinal[inicio:]
+        return demodular_bits(sinal_alinhado)
+
+    sinal = gravar(live_decode)
 
     inicio = encontrar_inicio_payload(sinal)
     if inicio == 0 or inicio >= len(sinal):

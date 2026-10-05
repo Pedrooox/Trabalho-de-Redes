@@ -41,31 +41,25 @@ try:
 except ImportError:
     HAS_MSVCRT = False
 
-def gerar_click(duracao=0.15, amplitude=1.0):
-    """Gera uma 'batida' tipo bumbo (kick drum) bem alta para o Método 1."""
+def gerar_click(duracao=0.10, amplitude=1.0):
+    """Gera um 'beep' curto e agudo para o Método 1 (melhor detecção)."""
     t = np.linspace(0, duracao, int(SAMPLE_RATE * duracao), endpoint=False)
-    # Pitch drop do bumbo: começa em 150Hz cai rápido para 40Hz
-    freq_start = 150.0
-    freq_end = 40.0
-    decay_rate = 30.0
-    freqs = freq_end + (freq_start - freq_end) * np.exp(-decay_rate * t)
-    phase = 2 * np.pi * np.cumsum(freqs) / SAMPLE_RATE
+    freq = 2500.0  # Frequência aguda (mas não ultra alta) para o beep/peep
     
-    # Onda principal (senoide)
-    onda = np.sin(phase)
+    onda = np.sin(2 * np.pi * freq * t)
     
-    # Adiciona um estalo inicial (ruído)
-    ruido = np.random.uniform(-1, 1, len(t))
-    onda[:int(SAMPLE_RATE*0.01)] += ruido[:int(SAMPLE_RATE*0.01)] * 0.5
+    # Envelope de amplitude para soar como um 'peep' e evitar estalos na caixa de som
+    # Fade in rápido e fade out suave
+    envelope = np.ones_like(t)
+    fade_in_len = int(len(t) * 0.1)
+    fade_out_len = int(len(t) * 0.5)
     
-    # Envelope de amplitude para decaimento percussivo
-    envelope = np.exp(-15.0 * t)
-    
+    if fade_in_len > 0:
+        envelope[:fade_in_len] = np.linspace(0, 1, fade_in_len)
+    if fade_out_len > 0:
+        envelope[-fade_out_len:] = np.linspace(1, 0, fade_out_len)
+        
     som = onda * envelope
-    # Normaliza para o volume máximo possível sem distorcer muito
-    max_val = np.max(np.abs(som))
-    if max_val > 0:
-        som = som / max_val
     return (som * amplitude).astype(np.float32)
 
 
@@ -76,10 +70,10 @@ def tocar(sinal):
     sd.wait()
 
 
-def gravar():
+def gravar(live_decode_func=None):
     """Grava do microfone padrão com controle manual.
     Pressione ENTER para começar e ENTER para parar.
-    Mostra um histograma do som no terminal."""
+    Mostra um histograma do som e os bits detectados ao vivo no terminal."""
     import sounddevice as sd
     os.system("") # Habilita sequências ANSI no cmd/PowerShell do Windows
     q = queue.Queue()
@@ -100,8 +94,10 @@ def gravar():
     print("[GRAVANDO] Ouvindo... (Pressione ENTER para PARAR a gravação)")
     
     if HAS_MSVCRT:
-        sys.stdout.write("\n" * 10)
+        sys.stdout.write("\n" * 12)
         sys.stdout.flush()
+
+    dados_acumulados = []
 
     # Abre o fluxo contínuo de áudio
     with sd.InputStream(samplerate=SAMPLE_RATE, channels=CANAIS, dtype='float32', callback=callback):
@@ -111,6 +107,21 @@ def gravar():
                     if msvcrt.getch() in (b'\r', b'\n'):
                         break
                 
+                # Transfere os dados da fila para a lista acumulada
+                while not q.empty():
+                    dados_acumulados.append(q.get())
+                
+                bits_str = ""
+                if live_decode_func and dados_acumulados:
+                    sinal_atual = np.concatenate(dados_acumulados).flatten()
+                    try:
+                        bits = live_decode_func(sinal_atual)
+                        bits_str = "".join(str(b) for b in bits)
+                        if len(bits_str) > 70:
+                            bits_str = "..." + bits_str[-67:]
+                    except Exception:
+                        bits_str = "Erro na decodificação ao vivo"
+
                 fft_val = np.abs(np.fft.rfft(dados_recentes))
                 vol = np.max(np.abs(dados_recentes))
                 vol_bars = min(40, int(vol * 40))
@@ -134,20 +145,22 @@ def gravar():
                     bars = min(30, int(val_norm * 30))
                     linhas.append(f"\033[K{nome}: {'█' * bars}")
                 
+                linhas.append("\033[K--- Decodificação ao Vivo ---")
+                linhas.append(f"\033[KBits: {bits_str}")
+
                 sys.stdout.write(f"\033[{len(linhas)}A") # Sobe X linhas
                 sys.stdout.write("\n".join(linhas) + "\n")
                 sys.stdout.flush()
-                time.sleep(0.05)
+                time.sleep(0.1) # Atualiza 10 vezes por segundo para evitar sobrecarga na decodificação ao vivo
         else:
             input()
             
-    # Agrupa os blocos de áudio gravados na fila
-    dados = []
+    # Agrupa quaisquer blocos restantes
     while not q.empty():
-        dados.append(q.get())
+        dados_acumulados.append(q.get())
         
     print("\nGravação finalizada.")
-    return np.concatenate(dados).flatten() if dados else np.array([])
+    return np.concatenate(dados_acumulados).flatten() if dados_acumulados else np.array([])
 
 
 # ---------------- Conversão texto <-> bits ----------------
