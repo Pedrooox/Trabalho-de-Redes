@@ -43,7 +43,9 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 ## Explicação do Método 2:  
 
 No 'Método 2', é utilizada uma abordagem mais avançada para a transmissão de dados. Aplica-se a técnica de modulação FSK (Frequency-Shift Keying), utilizando tons de 2000 Hz para representar o bit 0 e 3500 Hz para o bit 1, com 0,04 segundos de duração por símbolo. O texto é dividido em quadros de 16 bits, sendo 8 bits de dados e 8 bits de verificação de redundância cíclica (CRC-8).
-Na recepção, a energia das frequências-alvo é calculada para localizar o ponto exato de início da mensagem, finalizando com o recálculo do CRC-8.
+
+Para a demodulação, é usado o algoritmo de Goertzel, onde o áudio é fatiado em janelas de 0,04 segundos. Ele atua como um filtro matemático altamente eficiente, calculando a energia apenas nas frequências-alvo. A frequência que apresentar o maior valor de energia no cálculo define se aquele bloco de som representa um '0' ou um '1'.
+
 O algoritmo CRC-8 (Cyclic Redundancy Check de 8 bits) recebe o quadro de 16 bits, separa os 8 bits de dados e refaz a divisão polinomial. Se o resto da divisão for zero, significa que os dados não sofreram interferência. Caso contrário, a validação matemática falha e o sistema descarta o quadro corrompido. 
 
 ### Utilização - Transmissão
@@ -57,7 +59,7 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 Eduardo Giroto:  
 Pedro Frederico:  
 Nicolas Nakaie:  
-Kauã Lopes:  
+Kauã Lopes: Pesquisa, documentação, planejamento e software ( arquivos de teste ). 
 Walter Aurélio:  
 
 ## Desafios, Problemas e Soluções:  
