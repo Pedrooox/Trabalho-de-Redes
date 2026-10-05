@@ -8,9 +8,9 @@ import numpy as np
 from common import (SAMPLE_RATE, gerar_tom, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, PREAMBLE_FREQ, PREAMBLE_DUR)
 
-FREQ_BIT0 = 1200         # Hz
-FREQ_BIT1 = 2200         # Hz
-DURACAO_SIMBOLO = 0.05   # s por bit (bem mais rápido que o Método 1)
+FREQ_BIT0 = 2000         # Hz
+FREQ_BIT1 = 3500         # Hz
+DURACAO_SIMBOLO = 0.04   # s por bit (bem mais rápido que o Método 1)
 BITS_CRC = 8
 
 
@@ -55,78 +55,75 @@ def transmitir(texto):
     print("[MÉTODO 2] Transmissão concluída.")
 
 
-# ---------------- Recepção (demodulação via algoritmo de Goertzel) ----------------
-
-def goertzel_energia(sinal, freq):
-    """Estima a energia do sinal na frequência 'freq' (mais leve que uma FFT completa)."""
-    n = len(sinal)
-    if n == 0:
-        return 0.0
-    k = int(0.5 + n * freq / SAMPLE_RATE)
-    w = (2 * np.pi / n) * k
-    coef = 2 * np.cos(w)
-    s_prev = s_prev2 = 0.0
-    for amostra in sinal:
-        s = amostra + coef * s_prev - s_prev2
-        s_prev2, s_prev = s_prev, s
-    return s_prev2 ** 2 + s_prev ** 2 - coef * s_prev * s_prev2
-
-
-def encontrar_inicio_payload(sinal):
-    tamanho_preambulo = int(SAMPLE_RATE * PREAMBLE_DUR)
-    amostras_silencio = int(SAMPLE_RATE * 0.15)
+def obter_energias_fsk_fft(sinal):
+    """Calcula a energia nas frequências FSK utilizando a FFT (numpy)."""
+    if len(sinal) == 0:
+        return 0.0, 0.0
     
-    janela_busca = int(SAMPLE_RATE * 0.02)  
-    passo = int(SAMPLE_RATE * 0.002)        
-
-    if len(sinal) < tamanho_preambulo:
-        return 0
-
-    energias = []
-    for i in range(0, len(sinal) - janela_busca, passo):
-        j = sinal[i:i + janela_busca]
-        energias.append((i, goertzel_energia(j, PREAMBLE_FREQ)))
-
-    if not energias:
-        return 0
-
-    max_e = max(e for _, e in energias)
-    if max_e < 0.001:  
-        return 0
-
-    limiar = max_e * 0.4
-    inicio_preambulo = 0
-    for idx, e in energias:
-        if e >= limiar:
-            inicio_preambulo = idx
-            break
-
-    return inicio_preambulo + tamanho_preambulo + amostras_silencio
+    # Calcula a FFT para sinais reais
+    espetro = np.fft.rfft(sinal)
+    frequencias = np.fft.rfftfreq(len(sinal), 1/SAMPLE_RATE)
+    
+    # Eleva a magnitude ao quadrado para obter a energia
+    energias = np.abs(espetro) ** 2
+    
+    # Encontra os índices (bins) mais próximos das frequências dos bits 0 e 1
+    idx_e0 = np.argmin(np.abs(frequencias - FREQ_BIT0))
+    idx_e1 = np.argmin(np.abs(frequencias - FREQ_BIT1))
+    
+    return energias[idx_e0], energias[idx_e1]
 
 
-def demodular_bits(sinal, n_bits_esperado):
+def demodular_bits(sinal):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
+    # Calcula quantos bits cabem no áudio gravado
+    n_bits = len(sinal) // amostras_por_simbolo 
+    
     bits = []
-    for i in range(n_bits_esperado):
+    for i in range(n_bits):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
         if len(janela) < amostras_por_simbolo:
             break
-        e0 = goertzel_energia(janela, FREQ_BIT0)
-        e1 = goertzel_energia(janela, FREQ_BIT1)
+            
+        e0, e1 = obter_energias_fsk_fft(janela)
         bits.append(1 if e1 > e0 else 0)
     return bits
 
 
-def receber(n_bits_esperado, tempo_gravacao=10.0):
-    duracao = max(tempo_gravacao, n_bits_esperado * DURACAO_SIMBOLO + 2.0)
-    print(f"[GRAVANDO] Ouvindo por {duracao:.1f}s...")
-    sinal = gravar(duracao)
+def encontrar_inicio_fsk(sinal):
+    janela = int(SAMPLE_RATE * 0.01)  # Janela de 10ms
+    passo = int(SAMPLE_RATE * 0.002)  # Avança de 2 em 2ms
+    
+    # Descobre o nível de ruído da sala no início da gravação
+    energias = []
+    for i in range(0, min(len(sinal) - janela, int(SAMPLE_RATE * 0.5)), passo):
+        trecho = sinal[i:i + janela]
+        e0, e1 = obter_energias_fsk_fft(trecho)
+        energias.append(max(e0, e1))
+    
+    ruido_fundo = np.mean(energias) if energias else 0.0001
+    limiar_deteccao = max(ruido_fundo * 5, 0.001)
 
-    inicio = encontrar_inicio_payload(sinal)
+    # Varre o áudio procurando o primeiro som
+    for i in range(0, len(sinal) - janela, passo):
+        trecho = sinal[i:i + janela]
+        e0, e1 = obter_energias_fsk_fft(trecho)
+        
+        if max(e0, e1) > limiar_deteccao:
+            return i
+
+    return 0
+
+
+def receber():
+    sinal = gravar() # Chama sem parâmetros
+    
+    inicio = encontrar_inicio_fsk(sinal)
     sinal_alinhado = sinal[inicio:]
-
-    bits = demodular_bits(sinal_alinhado, n_bits_esperado)
+    
+    # Chama a demodulação com o sinal já alinhado
+    bits = demodular_bits(sinal_alinhado)
     return validar_e_decodificar(bits)
 
 
