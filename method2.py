@@ -125,9 +125,6 @@ def demodular_bits(sinal, energia_ref):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
     bits = []
     
-    limiar_silencio = energia_ref * 0.05 # 5% da energia de referência do FSK
-    silence_count = 0
-    
     for i in range(len(sinal) // amostras_por_simbolo):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
@@ -137,15 +134,6 @@ def demodular_bits(sinal, energia_ref):
         e0 = goertzel_energia(janela, FREQ_BIT0)
         e1 = goertzel_energia(janela, FREQ_BIT1)
         
-        # Parada dinâmica super robusta baseada no pico exato
-        if max(e0, e1) < limiar_silencio:
-            silence_count += 1
-            if silence_count >= 5: # 5 símbolos de silêncio = fim da transmissão
-                bits = bits[:-4]
-                break
-        else:
-            silence_count = 0
-            
         bits.append(1 if e1 > e0 else 0)
         
     return bits
@@ -193,22 +181,6 @@ def validar_e_decodificar(bits):
             quadros_falha += 1
         
         i += 16
-
-    # Tratamento de quadro truncado (recuperação automática)
-    if len(bits) - i > 8:
-        dados = bits[i:i + 8]
-        crc_parcial_recebido = bits[i + 8:]
-        tamanho_crc = len(crc_parcial_recebido)
-        crc_esperado = crc8(dados)
-        
-        if crc_parcial_recebido == crc_esperado[:tamanho_crc]:
-            quadros_ok += 1
-            dados_validos.extend(dados)
-            print(f"[RECUPERAÇÃO] Quadro truncado detectado (faltam {8 - tamanho_crc} bits do CRC). CRC parcial bate. Auto-recuperado com sucesso!")
-        else:
-            quadros_falha += 1
-    elif len(bits) - i > 0:
-        quadros_falha += 1
 
     texto = bits_para_texto(dados_validos) if dados_validos else ""
     
