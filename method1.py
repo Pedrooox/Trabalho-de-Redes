@@ -9,8 +9,8 @@ import numpy as np
 from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, bit_de_paridade_par)
 
-SILENCIO_ENTRE = 0.40     # s de silêncio antes/depois de cada símbolo (bit)
-GAP_ENTRE_BATIDAS = 0.20   # s de silêncio entre as 2 batidas do bit 1
+SILENCIO_ENTRE = 0.50      # s de silêncio antes/depois de cada símbolo (bit)
+GAP_ENTRE_BATIDAS = 0.30   # s de silêncio entre as 2 batidas do bit 1
 
 
 # ---------------- Transmissão ----------------
@@ -38,6 +38,7 @@ def bit_para_audio(bit):
 
 def transmitir(texto):
     quadros = montar_quadros(texto)
+    
     partes = [gerar_silencio(0.15)]
     for quadro in quadros:
         for bit in quadro:
@@ -50,7 +51,7 @@ def transmitir(texto):
 
 # ---------------- Recepção ----------------
 
-def detectar_batidas(sinal, limiar_rel=0.05, dist_min=0.10):
+def detectar_batidas(sinal, limiar_rel=0.15, dist_min=0.25):
     """Detecção de onset por energia do sinal: retorna os índices (amostras) dos picos (batidas)."""
     janela = max(1, int(SAMPLE_RATE * 0.005))
     energia = np.convolve(sinal ** 2, np.ones(janela) / janela, mode='same')
@@ -78,7 +79,7 @@ def agrupar_em_bits(sinal):
     if not batidas:
         return []
     tempos = np.array(batidas) / SAMPLE_RATE
-    limiar_gap = 0.40
+    limiar_gap = 0.60
     slots, atual = [], [tempos[0]]
     for t in tempos[1:]:
         if t - atual[-1] > limiar_gap:
@@ -90,56 +91,45 @@ def agrupar_em_bits(sinal):
     return [0 if len(s) == 1 else 1 for s in slots]
 
 
-def receber(duracao_estim):
-    sinal = gravar(duracao_estim)
+def receber():
+    sinal = gravar() # Grava até o utilizador pressionar ENTER
     bits = agrupar_em_bits(sinal)
-    print(f"[MÉTODO 1] {len(bits)} bit(s)/símbolo(s) detectado(s).")
+    
+    # Transforma a lista numa string e imprime na tela imediatamente
+    bits_str = "".join(str(b) for b in bits)
+    print(f"\n[DEMODULAÇÃO - MÉTODO 1] Foram lidos {len(bits)} bits.")
+    print(f"Bits brutos capturados: {bits_str}\n")
+    
     return validar_e_decodificar(bits)
 
 
 def validar_e_decodificar(bits):
+    """Recorta os 8 primeiros bits de cada quadro de 9, valida a paridade e reconstrói o texto."""
     dados_validos = []
-    quadros_ok = 0
-    quadros_falha = 0
-    idx = 0
-    i = 0
-
-    # Cria uma string com os bits separados por espaço (ex: "0 1 1 0 0 0 0 1 1")
-    bits_recebidos_str = " ".join(str(b) for b in bits)
-
+    quadros_ok = quadros_falha = 0
+    i = idx = 0
     while i + 9 <= len(bits):
         quadro = bits[i:i + 9]
-        dados = quadro[:8]
-        paridade_recebida = quadro[8]
-        
-        paridade_calculada = sum(dados) % 2
-
-        if paridade_recebida == paridade_calculada:
+        dados, paridade_recebida = quadro[:8], quadro[8]
+        if paridade_recebida == bit_de_paridade_par(dados):
             quadros_ok += 1
             dados_validos.extend(dados)
         else:
             quadros_falha += 1
-            print(f"[FALHA DE TRANSMISSÃO] Quadro {idx} corrompido (erro de paridade).")
-
+            print(f"[FALHA DE TRANSMISSÃO] Quadro {idx} corrompido (paridade não confere).")
         i += 9
         idx += 1
 
-    bits_sobrantes = len(bits) % 9
-    if bits_sobrantes != 0:
-        quadros_falha += 1
-        print(f"[FALHA DE TRANSMISSÃO] Quadro {idx} incompleto ({bits_sobrantes} de 9 bits recebidos).")
+    bits_sobrando = len(bits) - i
+    if bits_sobrando > 0:
+        bits_faltantes = 9 - bits_sobrando
+        print(f"[AVISO] O quadro {idx + 1} não está completo (faltam {bits_faltantes} bits).")
 
     texto = bits_para_texto(dados_validos) if dados_validos else ""
-
-    # Exibe a mensagem final com a sequência de bits acoplada
     if quadros_falha == 0 and quadros_ok > 0:
-        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s).")
-        print(f"Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
+        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r}")
+    elif quadros_ok > 0:
+        print(f"[RESULTADO PARCIAL] {quadros_ok} quadro(s) OK. Mensagem interceptada: {texto!r}")
     else:
-        # Se deu erro, mostra os bits que ele conseguiu escutar até o momento
-        if len(bits) > 0:
-            print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA. | Bits escutados: {bits_recebidos_str}")
-        else:
-            print(f"[RESULTADO] Nenhum bit detectado. {quadros_falha} quadro(s) com FALHA.")
-
+        print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA.")
     return texto, quadros_ok, quadros_falha

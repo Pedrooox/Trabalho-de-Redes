@@ -2,7 +2,10 @@
 Camada Física - Utilitários comuns de áudio
 Comunicação acústica entre dispositivos usando a placa de som (meio: ondas sonoras).
 """
-
+import queue
+import sys
+import sounddevice as sd
+import numpy as np
 import numpy as np
 
 # ---------------- Configurações globais ----------------
@@ -14,7 +17,7 @@ PREAMBLE_FREQ = 3000           # Hz
 PREAMBLE_DUR = 0.25             # s
 
 
-def gerar_tom(freq, duracao, amplitude=0.8, fade=0.003):
+def gerar_tom(freq, duracao, amplitude=0.6, fade=0.003):
     """Gera um tom senoidal puro com fade in/out para evitar estalos (cliques) indesejados."""
     t = np.linspace(0, duracao, int(SAMPLE_RATE * duracao), endpoint=False)
     onda = amplitude * np.sin(2 * np.pi * freq * t)
@@ -30,19 +33,12 @@ def gerar_silencio(duracao):
     return np.zeros(int(SAMPLE_RATE * duracao), dtype=np.float32)
 
 
-def gerar_click(duracao=0.07, amplitude=1.0):
-    """Gera um som de batida seca ('toc') simulando impacto em madeira/mesa."""
+def gerar_click(duracao=0.03, amplitude=1.0):
+    """Gera uma 'batida' curta (ruído de impacto, ex: batida na mesa/palma) para o Método 1."""
     n = int(SAMPLE_RATE * duracao)
-    t = np.linspace(0, duracao, n, endpoint=False)
-    
-    # Frequência caindo rápido de 800Hz para 200Hz para dar o "peso" do impacto
-    freqs = np.linspace(800, 200, n)
-    onda = amplitude * np.sin(2 * np.pi * freqs * t)
-    
-    # Envelope agressivo para estrangular o som e não deixar rastro (eco)
-    envelope = np.exp(-np.linspace(0, 15, n)) 
-    
-    return (onda * envelope).astype(np.float32)
+    ruido = amplitude * np.random.uniform(-1, 1, n)
+    envelope = np.exp(-np.linspace(0, 12, n))   # decaimento percussivo
+    return (ruido * envelope).astype(np.float32)
 
 
 def tocar(sinal):
@@ -52,14 +48,26 @@ def tocar(sinal):
     sd.wait()
 
 
-def gravar(duracao):
-    """Grava 'duracao' segundos do microfone padrão."""
-    import sounddevice as sd
-    print(f"[GRAVANDO] Ouvindo por {duracao:.1f}s...")
-    sinal = sd.rec(int(duracao * SAMPLE_RATE), samplerate=SAMPLE_RATE,
-                    channels=CANAIS, dtype='float32')
-    sd.wait()
-    return sinal.flatten()
+def gravar():
+    """Grava o áudio do microfone continuamente até o usuário pressionar ENTER."""
+    q = queue.Queue()
+    
+    def callback(indata, frames, time, status):
+        if status:
+            print(status, file=sys.stderr)
+        q.put(indata.copy())
+        
+    print("[GRAVANDO] Pressione ENTER para parar a gravação...")
+    # Abre o fluxo contínuo de áudio
+    with sd.InputStream(samplerate=SAMPLE_RATE, channels=CANAIS, dtype='float32', callback=callback):
+        input()  # O programa bloqueia aqui até a tecla ENTER ser pressionada
+        
+    # Agrupa os blocos de áudio gravados na fila
+    dados = []
+    while not q.empty():
+        dados.append(q.get())
+        
+    return np.concatenate(dados).flatten()
 
 
 # ---------------- Conversão texto <-> bits ----------------
