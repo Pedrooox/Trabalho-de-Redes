@@ -194,6 +194,22 @@ def validar_e_decodificar(bits):
         
         i += 16
 
+    # Tratamento de quadro truncado (recuperação automática)
+    if len(bits) - i > 8:
+        dados = bits[i:i + 8]
+        crc_parcial_recebido = bits[i + 8:]
+        tamanho_crc = len(crc_parcial_recebido)
+        crc_esperado = crc8(dados)
+        
+        if crc_parcial_recebido == crc_esperado[:tamanho_crc]:
+            quadros_ok += 1
+            dados_validos.extend(dados)
+            print(f"[RECUPERAÇÃO] Quadro truncado detectado (faltam {8 - tamanho_crc} bits do CRC). CRC parcial bate. Auto-recuperado com sucesso!")
+        else:
+            quadros_falha += 1
+    elif len(bits) - i > 0:
+        quadros_falha += 1
+
     texto = bits_para_texto(dados_validos) if dados_validos else ""
     
     # Exibe a mensagem final incluindo a sequência de bits
