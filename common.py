@@ -105,6 +105,7 @@ def gravar(live_decode_func=None):
             while True:
                 if msvcrt.kbhit():
                     if msvcrt.getch() in (b'\r', b'\n'):
+                        time.sleep(0.5) # Aguarda meio segundo para garantir que capturou o som final da sala
                         break
                 
                 # Transfere os dados da fila para a lista acumulada
