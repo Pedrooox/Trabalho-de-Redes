@@ -135,7 +135,8 @@ def demodular_bits(sinal):
         if len(j) == amostras_por_simbolo:
             energias.append(max(goertzel_energia(j, FREQ_BIT0), goertzel_energia(j, FREQ_BIT1)))
             
-    limiar_silencio = max(energias) * 0.15 if energias else 0.0001
+    # Reduzido para 2% para garantir que 1200Hz não seja confundido com silêncio em caixas de som ruins
+    limiar_silencio = max(energias) * 0.02 if energias else 0.0001
     silence_count = 0
     
     for i in range(len(sinal) // amostras_por_simbolo):
@@ -150,9 +151,9 @@ def demodular_bits(sinal):
         # Se detectamos energia muito baixa, assumimos que a transmissão acabou
         if max(e0, e1) < limiar_silencio:
             silence_count += 1
-            if silence_count >= 3:
+            if silence_count >= 6: # Mais paciência (6 bits = 0.3s) antes de desistir
                 # Remove os bits espúrios (ruído de silêncio) já adicionados
-                bits = bits[:-2]
+                bits = bits[:-5]
                 break
         else:
             silence_count = 0
@@ -188,7 +189,6 @@ def validar_e_decodificar(bits):
     quadros_ok = 0
     quadros_falha = 0
     i = 0
-    idx = 0
 
     # Cria a string com todos os bits recebidos separados por espaço
     bits_recebidos_str = " ".join(str(b) for b in bits)
@@ -203,20 +203,21 @@ def validar_e_decodificar(bits):
             dados_validos.extend(dados)
         else:
             quadros_falha += 1
-            print(f"[FALHA DE TRANSMISSÃO] Quadro {idx} corrompido (CRC-8 não confere).")
         
         i += 16
-        idx += 1
 
     texto = bits_para_texto(dados_validos) if dados_validos else ""
     
     # Exibe a mensagem final incluindo a sequência de bits
-    if quadros_falha == 0 and quadros_ok > 0:
-        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
+    if quadros_ok > 0:
+        msg = f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s)."
+        if quadros_falha > 0:
+            msg += f" (Ignorados {quadros_falha} blocos de ruído/erro)"
+        print(f"{msg}\nMensagem: {texto!r} | Bits totais capturados: {bits_recebidos_str}")
     else:
         if len(bits) > 0:
-            print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA DE TRANSMISSÃO. | Bits escutados: {bits_recebidos_str}")
+            print(f"[RESULTADO] Nenhum quadro válido. ({quadros_falha} blocos corrompidos/ruído) | Bits totais capturados: {bits_recebidos_str}")
         else:
-            print(f"[RESULTADO] Nenhum bit detectado. {quadros_falha} quadro(s) com FALHA DE TRANSMISSÃO.")
+            print(f"[RESULTADO] Nenhum bit detectado.")
 
     return texto, quadros_ok, quadros_falha
