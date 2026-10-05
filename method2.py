@@ -73,50 +73,71 @@ def goertzel_energia(sinal, freq):
 
 
 def encontrar_inicio_payload(sinal):
-    tamanho_preambulo = int(SAMPLE_RATE * PREAMBLE_DUR)
-    amostras_silencio = int(SAMPLE_RATE * 0.15)
-    
     janela_busca = int(SAMPLE_RATE * 0.02)  
-    passo = int(SAMPLE_RATE * 0.002)        
+    passo = int(SAMPLE_RATE * 0.005)        
 
-    if len(sinal) < tamanho_preambulo:
-        return 0
+    if len(sinal) < janela_busca:
+        return -1
 
-    energias = []
-    for i in range(0, len(sinal) - janela_busca, passo):
-        j = sinal[i:i + janela_busca]
-        energias.append((i, goertzel_energia(j, PREAMBLE_FREQ)))
-
-    if not energias:
-        return 0
-
-    max_e = max(e for _, e in energias)
-    if max_e < 0.001:  
-        return 0
-
-    limiar = max_e * 0.4
-    inicio_preambulo = 0
-    for idx, e in energias:
-        if e >= limiar:
-            inicio_preambulo = idx
+    # 1. Achar o pico de energia do preâmbulo (3000 Hz)
+    energias_pre = [goertzel_energia(sinal[i:i+janela_busca], PREAMBLE_FREQ) 
+                    for i in range(0, len(sinal) - janela_busca, passo)]
+    
+    if not energias_pre: return -1
+    max_e_pre = max(energias_pre)
+    if max_e_pre < 0.0001: 
+        return -1
+        
+    limiar_pre = max_e_pre * 0.3
+    inicio_preambulo = -1
+    for idx, e in enumerate(energias_pre):
+        if e >= limiar_pre:
+            inicio_preambulo = idx * passo
             break
-
-    return inicio_preambulo + tamanho_preambulo + amostras_silencio
+            
+    if inicio_preambulo == -1: return -1
+    
+    # 2. Procurar o início dos bits FSK após o preâmbulo
+    busca_bits_inicio = inicio_preambulo + int(SAMPLE_RATE * (PREAMBLE_DUR + 0.05))
+    
+    restante = sinal[busca_bits_inicio:]
+    if len(restante) < janela_busca:
+        return -1
+        
+    energias_fsk = []
+    for i in range(0, len(restante) - janela_busca, passo):
+        e0 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT0)
+        e1 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT1)
+        energias_fsk.append(max(e0, e1))
+        
+    if not energias_fsk: return -1
+    max_e_fsk = max(energias_fsk)
+    if max_e_fsk < 0.0001:
+        return -1
+        
+    limiar_fsk = max_e_fsk * 0.3
+    for idx, e in enumerate(energias_fsk):
+        if e >= limiar_fsk:
+            return busca_bits_inicio + (idx * passo)
+            
+    return -1
 
 
 def demodular_bits(sinal):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
     bits = []
+    
+    # Tolerância muito baixa apenas para não decodificar silêncio absoluto
     for i in range(len(sinal) // amostras_por_simbolo):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
         if len(janela) < amostras_por_simbolo:
             break
+            
         e0 = goertzel_energia(janela, FREQ_BIT0)
         e1 = goertzel_energia(janela, FREQ_BIT1)
         
-        # Parada dinâmica por silêncio: se não há energia suficiente em nenhuma das frequências
-        if max(e0, e1) < 0.001:
+        if max(e0, e1) < 1e-6:
             break
             
         bits.append(1 if e1 > e0 else 0)
@@ -126,7 +147,7 @@ def demodular_bits(sinal):
 def receber():
     def live_decode(sinal):
         inicio = encontrar_inicio_payload(sinal)
-        if inicio == 0 or inicio >= len(sinal):
+        if inicio == -1 or inicio >= len(sinal):
             return []
         sinal_alinhado = sinal[inicio:]
         return demodular_bits(sinal_alinhado)
@@ -134,7 +155,7 @@ def receber():
     sinal = gravar(live_decode)
 
     inicio = encontrar_inicio_payload(sinal)
-    if inicio == 0 or inicio >= len(sinal):
+    if inicio == -1 or inicio >= len(sinal):
         print("[MÉTODO 2] Nenhum preâmbulo detectado.")
         return "", 0, 0
         
