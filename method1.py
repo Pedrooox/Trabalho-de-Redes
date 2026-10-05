@@ -90,8 +90,8 @@ def agrupar_em_bits(sinal):
     return [0 if len(s) == 1 else 1 for s in slots]
 
 
-def receber(duracao_estim):
-    sinal = gravar(duracao_estim)
+def receber():
+    sinal = gravar()
     bits = agrupar_em_bits(sinal)
     print(f"[MÉTODO 1] {len(bits)} bit(s)/símbolo(s) detectado(s).")
     return validar_e_decodificar(bits)

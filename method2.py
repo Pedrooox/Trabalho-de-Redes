@@ -123,9 +123,8 @@ def demodular_bits(sinal):
     return bits
 
 
-def receber(tempo_gravacao=10.0):
-    print(f"[GRAVANDO] Ouvindo por {tempo_gravacao:.1f}s...")
-    sinal = gravar(tempo_gravacao)
+def receber():
+    sinal = gravar()
 
     inicio = encontrar_inicio_payload(sinal)
     if inicio == 0 or inicio >= len(sinal):
