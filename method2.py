@@ -104,29 +104,37 @@ def encontrar_inicio_payload(sinal):
     return inicio_preambulo + tamanho_preambulo + amostras_silencio
 
 
-def demodular_bits(sinal, n_bits_esperado):
+def demodular_bits(sinal):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
     bits = []
-    for i in range(n_bits_esperado):
+    for i in range(len(sinal) // amostras_por_simbolo):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
         if len(janela) < amostras_por_simbolo:
             break
         e0 = goertzel_energia(janela, FREQ_BIT0)
         e1 = goertzel_energia(janela, FREQ_BIT1)
+        
+        # Parada dinâmica por silêncio: se não há energia suficiente em nenhuma das frequências
+        if max(e0, e1) < 0.001:
+            break
+            
         bits.append(1 if e1 > e0 else 0)
     return bits
 
 
-def receber(n_bits_esperado, tempo_gravacao=10.0):
-    duracao = max(tempo_gravacao, n_bits_esperado * DURACAO_SIMBOLO + 2.0)
-    print(f"[GRAVANDO] Ouvindo por {duracao:.1f}s...")
-    sinal = gravar(duracao)
+def receber(tempo_gravacao=10.0):
+    print(f"[GRAVANDO] Ouvindo por {tempo_gravacao:.1f}s...")
+    sinal = gravar(tempo_gravacao)
 
     inicio = encontrar_inicio_payload(sinal)
+    if inicio == 0 or inicio >= len(sinal):
+        print("[MÉTODO 2] Nenhum preâmbulo detectado.")
+        return "", 0, 0
+        
     sinal_alinhado = sinal[inicio:]
 
-    bits = demodular_bits(sinal_alinhado, n_bits_esperado)
+    bits = demodular_bits(sinal_alinhado)
     return validar_e_decodificar(bits)
 
 

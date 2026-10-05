@@ -17,29 +17,42 @@ def duracao_estimada_metodo1(n_caracteres):
 
 
 def menu():
-    print("=== Comunicação Acústica - Camada Física ===")
-    print("1) Transmitir mensagem")
-    print("2) Receber mensagem")
-    modo = input("Escolha o modo [1/2]: ").strip()
+    while True:
+        print("\n=== Comunicação Acústica - Camada Física ===")
+        print("1) Transmitir mensagem")
+        print("2) Receber mensagem")
+        print("0) Sair")
+        modo = input("Escolha o modo [1/2/0]: ").strip()
 
-    print("\nMétodo:")
-    print("1) Método 1 - Obrigatório (batidas sonoras, quadro de 9 bits, paridade)")
-    print("2) Método 2 - Livre escolha (FSK + CRC-8)")
-    metodo = input("Escolha o método [1/2]: ").strip()
+        if modo == '0':
+            print("Saindo...")
+            break
 
-    if modo == '1':
-        texto = input("Digite a mensagem a transmitir: ")
-        (method1 if metodo == '1' else method2).transmitir(texto)
+        if modo not in ['1', '2']:
+            print("Opção inválida.")
+            continue
 
-    elif modo == '2':
-        n_chars = int(input("Quantidade de caracteres esperados na mensagem: ").strip())
-        if metodo == '1':
-            method1.receber(35.0)
-        else:
-            method2.receber(n_chars * 16)  # 16 bits (8 dados + 8 CRC) por caractere
-    else:
-        print("Opção inválida.")
-        sys.exit(1)
+        print("\nMétodo:")
+        print("1) Método 1 - Obrigatório (batidas sonoras, quadro de 9 bits, paridade)")
+        print("2) Método 2 - Livre escolha (FSK + CRC-8)")
+        metodo = input("Escolha o método [1/2]: ").strip()
+
+        if metodo not in ['1', '2']:
+            print("Método inválido.")
+            continue
+
+        if modo == '1':
+            texto = input("Digite a mensagem a transmitir: ")
+            (method1 if metodo == '1' else method2).transmitir(texto)
+
+        elif modo == '2':
+            tempo_str = input("Tempo máximo de escuta em segundos [Padrão: 15]: ").strip()
+            tempo = float(tempo_str) if tempo_str else 15.0
+            
+            if metodo == '1':
+                method1.receber(tempo)
+            else:
+                method2.receber(tempo_gravacao=tempo)
 
 
 if __name__ == "__main__":
