@@ -1,42 +1,53 @@
-"""
-Teste de loopback (sem hardware de áudio): gera o sinal de cada método e
-o decodifica diretamente em memória, sem tocar/gravar de verdade.
-Útil para validar a lógica dos protocolos e para a demonstração/relatório.
-"""
 
-import method1
-import method2
+"""Script de demonstração de loopback (sem áudio real).
+Permite rodar um teste por vez para não poluir o terminal,
+ou rodar todos juntos para o relatório final."""
 
 
-def testar_metodo1(texto):
-    print(f"\n--- Teste Método 1 (sucesso): {texto!r} ---")
-    quadros = method1.montar_quadros(texto)
-    sinal = __import__('numpy').concatenate(
-        [method1.bit_para_audio(b) for q in quadros for b in q])
-    bits = method1.agrupar_em_bits(sinal)
-    method1.validar_e_decodificar(bits)
+import test_method1
+import test_method2
 
 
-def testar_metodo2(texto):
-    print(f"\n--- Teste Método 2 (sucesso): {texto!r} ---")
-    quadros = method2.montar_quadros(texto)
-    todos_bits = [b for q in quadros for b in q]
-    sinal = method2.bits_para_audio(todos_bits)
-    bits = method2.demodular_bits(sinal, len(todos_bits))
-    method2.validar_e_decodificar(bits)
+def menu():
+    print("\n============================================")
+    print("         MENU DE TESTES (LOOPBACK)          ")
+    print("============================================")
+    print("1) Método 1 - Sucesso ('Oi!')")
+    print("2) Método 1 - Quadro Incompleto")
+    print("3) Método 2 - Sucesso ('Ola, Equipe!')")
+    print("4) Método 2 - Com Corrupção de Bit (CRC Falha)")
+    print("5) Método 2 - Quadro Incompleto")
+    print("6) Rodar TODOS os testes de uma vez")
+    print("0) Sair")
+    print("============================================")
+    
+    opcao = input("Escolha o teste que deseja rodar [0-6]: ").strip()
 
-
-def testar_metodo2_com_erro(texto):
-    print(f"\n--- Teste Método 2 (com corrupção simulada): {texto!r} ---")
-    quadros = method2.montar_quadros(texto)
-    todos_bits = [b for q in quadros for b in q]
-    todos_bits[3] ^= 1  # corrompe 1 bit de dados do 1º quadro -> deve falhar no CRC
-    sinal = method2.bits_para_audio(todos_bits)
-    bits = method2.demodular_bits(sinal, len(todos_bits))
-    method2.validar_e_decodificar(bits)
+    if opcao == '1':
+        test_method1.testar_metodo1("Oi!")
+    elif opcao == '2':
+        test_method1.testar_metodo1_incompleto("Oi!")
+    elif opcao == '3':
+        test_method2.testar_metodo2("Ola, Equipe!")
+    elif opcao == '4':
+        test_method2.testar_metodo2_com_erro("Ola, Equipe!")
+    elif opcao == '5':
+        test_method2.testar_metodo2_incompleto("Ola, Equipe!")
+    elif opcao == '6':
+        print("\n--- EXECUTANDO BATERIA COMPLETA ---")
+        test_method1.testar_metodo1("Oi!")
+        test_method1.testar_metodo1_incompleto("Oi!")
+        test_method2.testar_metodo2("Ola, Equipe!")
+        test_method2.testar_metodo2_com_erro("Ola, Equipe!")
+        test_method2.testar_metodo2_incompleto("Ola, Equipe!")
+        print("\n--- FIM DA BATERIA DE TESTES ---")
+    elif opcao == '0':
+        print("Saindo dos testes...")
+    else:
+        print("Opção inválida! Tente novamente.")
 
 
 if __name__ == "__main__":
-    testar_metodo1("Oi!")
-    testar_metodo2("Ola, Equipe!")
-    testar_metodo2_com_erro("Ola, Equipe!")
+    menu()
+
+

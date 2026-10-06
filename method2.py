@@ -1,16 +1,21 @@
 """
-Método 2 (Livre Escolha) - Modulação FSK + Detecção de erros via CRC-8
-Cada bit vira um tom senoidal de frequência distinta (FSK), permitindo maior
-taxa de transmissão que o Método 1 (baseado em batidas), mantendo confiabilidade via CRC-8.
+Método 2 - Modulação "Morse Frequencial" (2-FSK) + Detecção de erros via CRC-8
+Adaptação do Código Morse para alta velocidade:
+ - "Ponto" (Bit 0) -> Tom de 2000 Hz
+ - "Traço" (Bit 1) -> Tom de 3500 Hz
+Demodulação feita através da Análise de Espetro (FFT).
 """
 
 import numpy as np
-from common import (SAMPLE_RATE, gerar_tom, gerar_silencio, tocar, gravar,
-                     texto_para_bits, bits_para_texto, PREAMBLE_FREQ, PREAMBLE_DUR)
+from common import (SAMPLE_RATE, gerar_tom, tocar, gravar,
+                     texto_para_bits, bits_para_texto, PREAMBLE_DUR)
 
-FREQ_BIT0 = 1200         # Hz
-FREQ_BIT1 = 2200         # Hz
-DURACAO_SIMBOLO = 0.08   # s por bit (aumentado ligeiramente para evitar corrupção por ecos da sala)
+# Frequências do "Morse Frequencial"
+FREQ_BIT0 = 2000         # Hz para o bit 0 (Ponto)
+FREQ_BIT1 = 3500         # Hz para o bit 1 (Traço)
+DURACAO_SIMBOLO = 0.04   # s por bit (40 ms, muito mais rápido que o Método 1)
+BITS_CRC = 8
+
 
 def crc8(dados_bits):
     """Calcula o CRC-8 (polinômio 0x07) sobre uma lista de bits de dados."""
@@ -39,161 +44,155 @@ def montar_quadros(texto):
 
 
 def bits_para_audio(bits):
+    """Mapeia os bits para os tons acústicos correspondentes."""
     return np.concatenate([gerar_tom(FREQ_BIT1 if b else FREQ_BIT0, DURACAO_SIMBOLO) for b in bits])
 
 
 def transmitir(texto):
     quadros = montar_quadros(texto)
     todos_bits = [b for q in quadros for b in q]
-    preambulo = gerar_tom(PREAMBLE_FREQ, PREAMBLE_DUR)
-    audio = np.concatenate([preambulo, gerar_silencio(0.15), bits_para_audio(todos_bits)])
-    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via FSK "
-          f"({FREQ_BIT0} Hz = bit 0 / {FREQ_BIT1} Hz = bit 1)...")
+    
+    # Gera diretamente o áudio com as frequências do Morse Adaptado
+    audio = bits_para_audio(todos_bits)
+    
+    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via Morse/FSK...")
     tocar(audio)
     print("[MÉTODO 2] Transmissão concluída.")
+    exibir_estatisticas_fsk(texto)
 
 
-# ---------------- Recepção (demodulação via algoritmo de Goertzel) ----------------
+# ---------------- Recepção (Demodulação via FFT) ----------------
 
-def goertzel_energia(sinal, freq):
-    """Estima a energia do sinal na frequência 'freq' (mais leve que uma FFT completa)."""
-    n = len(sinal)
-    if n == 0:
-        return 0.0
-    k = int(0.5 + n * freq / SAMPLE_RATE)
-    w = (2 * np.pi / n) * k
-    coef = 2 * np.cos(w)
-    s_prev = s_prev2 = 0.0
-    for amostra in sinal:
-        s = amostra + coef * s_prev - s_prev2
-        s_prev2, s_prev = s_prev, s
-    return s_prev2 ** 2 + s_prev ** 2 - coef * s_prev * s_prev2
-
-
-def encontrar_inicio_payload(sinal):
-    janela_busca = int(SAMPLE_RATE * 0.02)  
-    passo = int(SAMPLE_RATE * 0.005)        
-
-    if len(sinal) < janela_busca:
-        return -1, 0
-
-    # 1. Achar o pico de energia do preâmbulo (3000 Hz)
-    energias_pre = [goertzel_energia(sinal[i:i+janela_busca], PREAMBLE_FREQ) 
-                    for i in range(0, len(sinal) - janela_busca, passo)]
+def obter_energias_fsk_fft(sinal):
+    """Calcula a energia nas frequências FSK utilizando a FFT (numpy)."""
+    if len(sinal) == 0:
+        return 0.0, 0.0
     
-    if not energias_pre: return -1, 0
-    max_e_pre = max(energias_pre)
-    if max_e_pre < 0.0001: 
-        return -1, 0
-        
-    limiar_pre = max_e_pre * 0.3
-    inicio_preambulo = -1
-    for idx, e in enumerate(energias_pre):
-        if e >= limiar_pre:
-            inicio_preambulo = idx * passo
-            break
-            
-    if inicio_preambulo == -1: return -1, 0
+    # Calcula a FFT para sinais reais
+    espetro = np.fft.rfft(sinal)
+    frequencias = np.fft.rfftfreq(len(sinal), 1/SAMPLE_RATE)
     
-    # 2. Procurar o início dos bits FSK após o preâmbulo
-    busca_bits_inicio = inicio_preambulo + int(SAMPLE_RATE * (PREAMBLE_DUR + 0.05))
+    # Eleva a magnitude ao quadrado para obter a energia
+    energias = np.abs(espetro) ** 2
     
-    restante = sinal[busca_bits_inicio:]
-    if len(restante) < janela_busca:
-        return -1, 0
-        
-    energias_fsk = []
-    for i in range(0, len(restante) - janela_busca, passo):
-        e0 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT0)
-        e1 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT1)
-        energias_fsk.append(max(e0, e1))
-        
-    if not energias_fsk: return -1, 0
-    max_e_fsk = max(energias_fsk)
-    if max_e_fsk < 0.0001:
-        return -1, 0
-        
-    limiar_fsk = max_e_fsk * 0.3
-    for idx, e in enumerate(energias_fsk):
-        if e >= limiar_fsk:
-            return busca_bits_inicio + (idx * passo), max_e_fsk
-            
-    return -1, 0
+    # Encontra os índices (bins) mais próximos das frequências dos bits 0 e 1
+    idx_e0 = np.argmin(np.abs(frequencias - FREQ_BIT0))
+    idx_e1 = np.argmin(np.abs(frequencias - FREQ_BIT1))
+    
+    return energias[idx_e0], energias[idx_e1]
 
 
-def demodular_bits(sinal, energia_ref):
+def demodular_bits(sinal):
+    """Converte o sinal de áudio novamente em bits analisando janelas de tempo."""
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
-    bits = []
+    # Calcula quantos bits cabem no áudio gravado
+    n_bits = len(sinal) // amostras_por_simbolo 
     
-    for i in range(len(sinal) // amostras_por_simbolo):
+    bits = []
+    for i in range(n_bits):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
         if len(janela) < amostras_por_simbolo:
             break
             
-        e0 = goertzel_energia(janela, FREQ_BIT0)
-        e1 = goertzel_energia(janela, FREQ_BIT1)
-        
+        e0, e1 = obter_energias_fsk_fft(janela)
+        # Se a energia em 3500Hz for maior, é um Traço (Bit 1), senão é Ponto (Bit 0)
         bits.append(1 if e1 > e0 else 0)
-        
     return bits
 
 
-def receber():
-    def live_decode(sinal):
-        inicio, ref = encontrar_inicio_payload(sinal)
-        if inicio == -1 or inicio >= len(sinal):
-            return []
-        sinal_alinhado = sinal[inicio:]
-        return demodular_bits(sinal_alinhado, ref)
+def encontrar_inicio_fsk(sinal):
+    """Procura no áudio o ponto exato onde a transmissão começa para sincronizar os quadros."""
+    janela = int(SAMPLE_RATE * 0.01)  # Janela de 10ms
+    passo = int(SAMPLE_RATE * 0.002)  # Avança de 2 em 2ms
+    
+    # Descobre o nível de ruído da sala no início da gravação
+    energias = []
+    for i in range(0, min(len(sinal) - janela, int(SAMPLE_RATE * 0.5)), passo):
+        trecho = sinal[i:i + janela]
+        e0, e1 = obter_energias_fsk_fft(trecho)
+        energias.append(max(e0, e1))
+    
+    ruido_fundo = np.mean(energias) if energias else 0.0001
+    limiar_deteccao = max(ruido_fundo * 5, 0.001)
 
-    sinal = gravar(live_decode)
-
-    inicio, ref = encontrar_inicio_payload(sinal)
-    if inicio == -1 or inicio >= len(sinal):
-        print("[MÉTODO 2] Nenhum preâmbulo detectado.")
-        return "", 0, 0
+    # Varre o áudio procurando o primeiro som do transmissor
+    for i in range(0, len(sinal) - janela, passo):
+        trecho = sinal[i:i + janela]
+        e0, e1 = obter_energias_fsk_fft(trecho)
         
-    sinal_alinhado = sinal[inicio:]
+        if max(e0, e1) > limiar_deteccao:
+            return i
 
-    bits = demodular_bits(sinal_alinhado, ref)
+    return 0
+
+
+def receber():
+    sinal = gravar() # Aguarda o utilizador gravar o áudio
+    
+    inicio = encontrar_inicio_fsk(sinal)
+    sinal_alinhado = sinal[inicio:]
+    
+    # Chama a demodulação via FFT com o sinal já alinhado
+    bits = demodular_bits(sinal_alinhado)
     return validar_e_decodificar(bits)
 
 
 def validar_e_decodificar(bits):
+    """Aplica a regra de deteção de erros (CRC-8) e converte de volta para texto."""
     dados_validos = []
-    quadros_ok = 0
-    quadros_falha = 0
-    i = 0
-
-    # Cria a string com todos os bits recebidos separados por espaço
-    bits_recebidos_str = " ".join(str(b) for b in bits)
+    quadros_ok = quadros_falha = 0
+    i = idx = 0
+    
+    bits_recebidos_str = "".join(str(b) for b in bits)
 
     while i + 16 <= len(bits):
-        dados = bits[i:i + 8]
-        crc_recebido = bits[i + 8:i + 16]
-        
-        # Verifica se o CRC-8 recebido bate com o calculado
+        dados, crc_recebido = bits[i:i + 8], bits[i + 8:i + 16]
+        # Validação da integridade usando a lógica CRC-8
         if crc_recebido == crc8(dados):
             quadros_ok += 1
             dados_validos.extend(dados)
         else:
             quadros_falha += 1
-        
+            print(f"[FALHA DE TRANSMISSÃO] Quadro {idx} corrompido (CRC-8 não confere).")
         i += 16
+        idx += 1
+
+    bits_sobrando = len(bits) - i
+    if bits_sobrando > 0:
+        bits_faltantes = 16 - bits_sobrando
+        print(f"[AVISO] O quadro {idx + 1} não está completo (faltam {bits_faltantes} bits).")
 
     texto = bits_para_texto(dados_validos) if dados_validos else ""
     
-    # Exibe a mensagem final incluindo a sequência de bits
-    if quadros_ok > 0:
-        msg = f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s)."
-        if quadros_falha > 0:
-            msg += f" (Ignorados {quadros_falha} blocos de ruído/erro)"
-        print(f"{msg}\nMensagem: {texto!r} | Bits totais capturados: {bits_recebidos_str}")
+    if quadros_falha == 0 and quadros_ok > 0:
+        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
+    elif quadros_ok > 0:
+        print(f"[RESULTADO PARCIAL] {quadros_ok} quadro(s) OK. Mensagem interceptada: {texto!r} | Bits: {bits_recebidos_str}") 
     else:
         if len(bits) > 0:
-            print(f"[RESULTADO] Nenhum quadro válido. ({quadros_falha} blocos corrompidos/ruído) | Bits totais capturados: {bits_recebidos_str}")
+            print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA. | Bits: {bits_recebidos_str}")
         else:
             print(f"[RESULTADO] Nenhum bit detectado.")
 
     return texto, quadros_ok, quadros_falha
+
+
+# ---------------- Exibição de Desempenho (bps) ----------------
+
+def exibir_estatisticas_fsk(texto_enviado):
+    num_caracteres = len(texto_enviado)
+    num_bits_dados = num_caracteres * 8
+    
+    bits_por_quadro = 16  # 8 bits dados + 8 bits CRC-8
+    
+    tempo_overhead = PREAMBLE_DUR + 0.15
+    tempo_dados_crc = num_caracteres * bits_por_quadro * DURACAO_SIMBOLO
+    tempo_total = tempo_overhead + tempo_dados_crc
+    
+    bps_util = num_bits_dados / tempo_total if tempo_total > 0 else 0
+
+    print("\n--- RESUMO DE DESEMPENHO (MÉTODO 2 - MORSE/FSK) ---")
+    print(f"Tempo Total de Transmissão: {tempo_total:.2f} s")
+    print(f"Velocidade Efetiva (Payload):  {bps_util:.2f} bps")
+    print("--------------------------------------------------\n")

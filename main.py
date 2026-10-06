@@ -32,8 +32,8 @@ def menu():
         return
 
     print("\nMétodo:")
-    print("1) Método 1 - Obrigatório (batidas sonoras, quadro de 9 bits, paridade)")
-    print("2) Método 2 - Livre escolha (FSK + CRC-8)")
+    print("1) Método 1 - (batidas sonoras, paridade)")
+    print("2) Método 2 - (Morse/FSK + CRC-8)")
     metodo = input("Escolha o método [1/2]: ").strip()
 
     if metodo not in ['1', '2']:
@@ -45,7 +45,7 @@ def menu():
         
         from common import texto_para_bits
         bits = texto_para_bits(texto)
-        bits_str = "".join(str(b) for b in bits)
+        bits_str = " ".join(str(b) for b in bits)
         print(f"\n[INFO] Binário da mensagem a ser transmitida:\n{bits_str}\n")
         
         (method1 if metodo == '1' else method2).transmitir(texto)

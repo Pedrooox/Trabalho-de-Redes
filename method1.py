@@ -10,7 +10,7 @@ from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, bit_de_paridade_par)
 
 SILENCIO_ENTRE = 0.30     # s de silêncio antes/depois de cada símbolo (bit)
-GAP_ENTRE_BATIDAS = 0.15   # s de silêncio entre as 2 batidas do bit 1
+GAP_ENTRE_BATIDAS = 0.23   # s de silêncio entre as 2 batidas do bit 1
 
 
 # ---------------- Transmissão ----------------
@@ -137,7 +137,8 @@ def validar_e_decodificar(bits):
     # Exibe a mensagem final com a sequência de bits acoplada
     if quadros_falha == 0 and quadros_ok > 0:
         print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s).")
-        print(f"Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
+        print(f"Mensagem: {texto!r}")
+        print(f"Bits: {bits_recebidos_str}")
     else:
         # Se deu erro, mostra os bits que ele conseguiu escutar até o momento
         if len(bits) > 0:
