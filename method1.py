@@ -9,8 +9,8 @@ import numpy as np
 from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, bit_de_paridade_par)
 
-SILENCIO_ENTRE = 0.50     # s de silêncio antes/depois de cada símbolo (bit)
-GAP_ENTRE_BATIDAS = 0.30   # s de silêncio entre as 2 batidas do bit 1
+SILENCIO_ENTRE = 0.30     # s de silêncio antes/depois de cada símbolo (bit)
+GAP_ENTRE_BATIDAS = 0.15   # s de silêncio entre as 2 batidas do bit 1
 
 
 # ---------------- Transmissão ----------------
@@ -90,8 +90,11 @@ def agrupar_em_bits(sinal):
     return [0 if len(s) == 1 else 1 for s in slots]
 
 
-def receber(duracao_estim):
-    sinal = gravar(duracao_estim)
+def receber():
+    def live_decode(sinal):
+        return agrupar_em_bits(sinal)
+        
+    sinal = gravar(live_decode)
     bits = agrupar_em_bits(sinal)
     print(f"[MÉTODO 1] {len(bits)} bit(s)/símbolo(s) detectado(s).")
     return validar_e_decodificar(bits)

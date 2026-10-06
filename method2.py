@@ -10,9 +10,7 @@ from common import (SAMPLE_RATE, gerar_tom, gerar_silencio, tocar, gravar,
 
 FREQ_BIT0 = 1200         # Hz
 FREQ_BIT1 = 2200         # Hz
-DURACAO_SIMBOLO = 0.05   # s por bit (bem mais rápido que o Método 1)
-BITS_CRC = 8
-
+DURACAO_SIMBOLO = 0.08   # s por bit (aumentado ligeiramente para evitar corrupção por ecos da sala)
 
 def crc8(dados_bits):
     """Calcula o CRC-8 (polinômio 0x07) sobre uma lista de bits de dados."""
@@ -73,60 +71,92 @@ def goertzel_energia(sinal, freq):
 
 
 def encontrar_inicio_payload(sinal):
-    tamanho_preambulo = int(SAMPLE_RATE * PREAMBLE_DUR)
-    amostras_silencio = int(SAMPLE_RATE * 0.15)
-    
     janela_busca = int(SAMPLE_RATE * 0.02)  
-    passo = int(SAMPLE_RATE * 0.002)        
+    passo = int(SAMPLE_RATE * 0.005)        
 
-    if len(sinal) < tamanho_preambulo:
-        return 0
+    if len(sinal) < janela_busca:
+        return -1, 0
 
-    energias = []
-    for i in range(0, len(sinal) - janela_busca, passo):
-        j = sinal[i:i + janela_busca]
-        energias.append((i, goertzel_energia(j, PREAMBLE_FREQ)))
-
-    if not energias:
-        return 0
-
-    max_e = max(e for _, e in energias)
-    if max_e < 0.001:  
-        return 0
-
-    limiar = max_e * 0.4
-    inicio_preambulo = 0
-    for idx, e in energias:
-        if e >= limiar:
-            inicio_preambulo = idx
+    # 1. Achar o pico de energia do preâmbulo (3000 Hz)
+    energias_pre = [goertzel_energia(sinal[i:i+janela_busca], PREAMBLE_FREQ) 
+                    for i in range(0, len(sinal) - janela_busca, passo)]
+    
+    if not energias_pre: return -1, 0
+    max_e_pre = max(energias_pre)
+    if max_e_pre < 0.0001: 
+        return -1, 0
+        
+    limiar_pre = max_e_pre * 0.3
+    inicio_preambulo = -1
+    for idx, e in enumerate(energias_pre):
+        if e >= limiar_pre:
+            inicio_preambulo = idx * passo
             break
+            
+    if inicio_preambulo == -1: return -1, 0
+    
+    # 2. Procurar o início dos bits FSK após o preâmbulo
+    busca_bits_inicio = inicio_preambulo + int(SAMPLE_RATE * (PREAMBLE_DUR + 0.05))
+    
+    restante = sinal[busca_bits_inicio:]
+    if len(restante) < janela_busca:
+        return -1, 0
+        
+    energias_fsk = []
+    for i in range(0, len(restante) - janela_busca, passo):
+        e0 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT0)
+        e1 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT1)
+        energias_fsk.append(max(e0, e1))
+        
+    if not energias_fsk: return -1, 0
+    max_e_fsk = max(energias_fsk)
+    if max_e_fsk < 0.0001:
+        return -1, 0
+        
+    limiar_fsk = max_e_fsk * 0.3
+    for idx, e in enumerate(energias_fsk):
+        if e >= limiar_fsk:
+            return busca_bits_inicio + (idx * passo), max_e_fsk
+            
+    return -1, 0
 
-    return inicio_preambulo + tamanho_preambulo + amostras_silencio
 
-
-def demodular_bits(sinal, n_bits_esperado):
+def demodular_bits(sinal, energia_ref):
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
     bits = []
-    for i in range(n_bits_esperado):
+    
+    for i in range(len(sinal) // amostras_por_simbolo):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
         if len(janela) < amostras_por_simbolo:
             break
+            
         e0 = goertzel_energia(janela, FREQ_BIT0)
         e1 = goertzel_energia(janela, FREQ_BIT1)
+        
         bits.append(1 if e1 > e0 else 0)
+        
     return bits
 
 
-def receber(n_bits_esperado, tempo_gravacao=10.0):
-    duracao = max(tempo_gravacao, n_bits_esperado * DURACAO_SIMBOLO + 2.0)
-    print(f"[GRAVANDO] Ouvindo por {duracao:.1f}s...")
-    sinal = gravar(duracao)
+def receber():
+    def live_decode(sinal):
+        inicio, ref = encontrar_inicio_payload(sinal)
+        if inicio == -1 or inicio >= len(sinal):
+            return []
+        sinal_alinhado = sinal[inicio:]
+        return demodular_bits(sinal_alinhado, ref)
 
-    inicio = encontrar_inicio_payload(sinal)
+    sinal = gravar(live_decode)
+
+    inicio, ref = encontrar_inicio_payload(sinal)
+    if inicio == -1 or inicio >= len(sinal):
+        print("[MÉTODO 2] Nenhum preâmbulo detectado.")
+        return "", 0, 0
+        
     sinal_alinhado = sinal[inicio:]
 
-    bits = demodular_bits(sinal_alinhado, n_bits_esperado)
+    bits = demodular_bits(sinal_alinhado, ref)
     return validar_e_decodificar(bits)
 
 
@@ -135,7 +165,6 @@ def validar_e_decodificar(bits):
     quadros_ok = 0
     quadros_falha = 0
     i = 0
-    idx = 0
 
     # Cria a string com todos os bits recebidos separados por espaço
     bits_recebidos_str = " ".join(str(b) for b in bits)
@@ -150,20 +179,21 @@ def validar_e_decodificar(bits):
             dados_validos.extend(dados)
         else:
             quadros_falha += 1
-            print(f"[FALHA DE TRANSMISSÃO] Quadro {idx} corrompido (CRC-8 não confere).")
         
         i += 16
-        idx += 1
 
     texto = bits_para_texto(dados_validos) if dados_validos else ""
     
     # Exibe a mensagem final incluindo a sequência de bits
-    if quadros_falha == 0 and quadros_ok > 0:
-        print(f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s). Mensagem: {texto!r} | Bits: {bits_recebidos_str}")
+    if quadros_ok > 0:
+        msg = f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s)."
+        if quadros_falha > 0:
+            msg += f" (Ignorados {quadros_falha} blocos de ruído/erro)"
+        print(f"{msg}\nMensagem: {texto!r} | Bits totais capturados: {bits_recebidos_str}")
     else:
         if len(bits) > 0:
-            print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA DE TRANSMISSÃO. | Bits escutados: {bits_recebidos_str}")
+            print(f"[RESULTADO] Nenhum quadro válido. ({quadros_falha} blocos corrompidos/ruído) | Bits totais capturados: {bits_recebidos_str}")
         else:
-            print(f"[RESULTADO] Nenhum bit detectado. {quadros_falha} quadro(s) com FALHA DE TRANSMISSÃO.")
+            print(f"[RESULTADO] Nenhum bit detectado.")
 
     return texto, quadros_ok, quadros_falha
