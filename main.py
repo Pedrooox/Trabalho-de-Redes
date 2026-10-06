@@ -43,12 +43,23 @@ def menu():
     if modo == '1':
         texto = input("Digite a mensagem a transmitir: ")
         
-        from common import texto_para_bits
-        bits = texto_para_bits(texto)
-        bits_str = " ".join(str(b) for b in bits)
-        print(f"\n[INFO] Binário da mensagem a ser transmitida:\n{bits_str}\n")
+        # Escolhe o módulo correto consoante a escolha do utilizador
+        modulo_escolhido = method1 if metodo == '1' else method2
         
-        (method1 if metodo == '1' else method2).transmitir(texto)
+        # Pede ao módulo para montar os quadros com paridade ou CRC
+        quadros = modulo_escolhido.montar_quadros(texto)
+        
+        print("\n[INFO] Binário da mensagem a ser transmitida:")
+        if metodo == '1':
+            # Formata separando: 8 bits de dados e 1 de paridade
+            bits_str = "  ".join(f"{''.join(map(str, q[:8]))}-{''.join(map(str, q[8:]))}" for q in quadros)
+            print(f"Quadros (8 Dados - 1 Paridade): {bits_str}\n")
+        else:
+            # Formata separando: 8 bits de dados e 8 bits de CRC-8
+            bits_str = "  ".join(f"{''.join(map(str, q[:8]))}-{''.join(map(str, q[8:]))}" for q in quadros)
+            print(f"Quadros (8 Dados - 8 CRC-8): {bits_str}\n")
+        
+        modulo_escolhido.transmitir(texto)
 
     elif modo == '2':
         if metodo == '1':
