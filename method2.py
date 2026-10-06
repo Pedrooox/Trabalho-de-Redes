@@ -1,62 +1,27 @@
 """
-Método 2 (Livre Escolha) - Modulação FSK + Detecção de erros via CRC-8
-Cada bit vira um tom senoidal de frequência distinta (FSK), permitindo maior
-taxa de transmissão que o Método 1 (baseado em batidas), mantendo confiabilidade via CRC-8.
+Método 2 - Modulação DTMF (Dual-Tone Multi-Frequency) com FEC Hamming(7,4) estendido (8,4).
+Cada quadro de 4 bits de dados é codificado em 7 bits de Hamming + 1 bit de paridade geral (8 bits no total).
+Esses 8 bits são enviados como 2 símbolos DTMF (4 bits por símbolo).
 """
 
 import numpy as np
 from common import (SAMPLE_RATE, gerar_tom, gerar_silencio, tocar, gravar,
-                     texto_para_bits, bits_para_texto, PREAMBLE_FREQ, PREAMBLE_DUR)
+                     texto_para_bits, bits_para_texto)
 
-FREQ_BIT0 = 1200         # Hz
-FREQ_BIT1 = 2200         # Hz
-DURACAO_SIMBOLO = 0.08   # s por bit (aumentado ligeiramente para evitar corrupção por ecos da sala)
+# Frequências DTMF padrão (linhas e colunas)
+ROWS = [697, 770, 852, 941]
+COLS = [1209, 1336, 1477, 1633]
 
-def crc8(dados_bits):
-    """Calcula o CRC-8 (polinômio 0x07) sobre uma lista de bits de dados."""
-    poly = 0x07
-    reg = 0
-    for bit in dados_bits + [0] * 8:
-        reg = ((reg << 1) | bit) & 0x1FF
-        if reg & 0x100:
-            reg ^= (poly << 1)
-            reg &= 0x1FF
-    return [int(b) for b in format(reg & 0xFF, '08b')]
+PREAMBLE_FREQ = 3000
+PREAMBLE_DUR = 0.3
+SILENCE_POST_PREAMBLE = 0.1
+TONE_DUR = 0.08
+GUARD_DUR = 0.03
 
-
-# ---------------- Transmissão ----------------
-
-def montar_quadros(texto):
-    """Cada quadro = 8 bits de dados + 8 bits de CRC-8 (16 bits por quadro)."""
-    bits = texto_para_bits(texto)
-    quadros = []
-    for i in range(0, len(bits), 8):
-        dados = bits[i:i + 8]
-        if len(dados) < 8:
-            dados += [0] * (8 - len(dados))
-        quadros.append(dados + crc8(dados))
-    return quadros
-
-
-def bits_para_audio(bits):
-    return np.concatenate([gerar_tom(FREQ_BIT1 if b else FREQ_BIT0, DURACAO_SIMBOLO) for b in bits])
-
-
-def transmitir(texto):
-    quadros = montar_quadros(texto)
-    todos_bits = [b for q in quadros for b in q]
-    preambulo = gerar_tom(PREAMBLE_FREQ, PREAMBLE_DUR)
-    audio = np.concatenate([preambulo, gerar_silencio(0.15), bits_para_audio(todos_bits)])
-    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via FSK "
-          f"({FREQ_BIT0} Hz = bit 0 / {FREQ_BIT1} Hz = bit 1)...")
-    tocar(audio)
-    print("[MÉTODO 2] Transmissão concluída.")
-
-
-# ---------------- Recepção (demodulação via algoritmo de Goertzel) ----------------
+# ---------------- Funções Auxiliares ----------------
 
 def goertzel_energia(sinal, freq):
-    """Estima a energia do sinal na frequência 'freq' (mais leve que uma FFT completa)."""
+    """Estima a energia do sinal na frequência 'freq'."""
     n = len(sinal)
     if n == 0:
         return 0.0
@@ -70,21 +35,78 @@ def goertzel_energia(sinal, freq):
     return s_prev2 ** 2 + s_prev ** 2 - coef * s_prev * s_prev2
 
 
+# ---------------- Transmissão ----------------
+
+def codificar_hamming84(d1, d2, d3, d4):
+    """Codifica 4 bits de dados em 8 bits (Hamming 7,4 + paridade par)."""
+    p1 = d1 ^ d2 ^ d4
+    p2 = d1 ^ d3 ^ d4
+    p3 = d2 ^ d3 ^ d4
+    # Bit 0 é paridade geral de tudo
+    p0 = p1 ^ p2 ^ d1 ^ p3 ^ d2 ^ d3 ^ d4
+    return [p0, p1, p2, d1, p3, d2, d3, d4]
+
+
+def montar_quadros(texto):
+    bits = texto_para_bits(texto)
+    # Zero-padding se necessário
+    if len(bits) % 4 != 0:
+        bits.extend([0] * (4 - (len(bits) % 4)))
+        
+    quadros = []
+    for i in range(0, len(bits), 4):
+        quadros.append(codificar_hamming84(*bits[i:i+4]))
+    return quadros
+
+
+def gerar_dtmf(nibble_bits):
+    val = (nibble_bits[0]<<3) | (nibble_bits[1]<<2) | (nibble_bits[2]<<1) | nibble_bits[3]
+    row = val // 4
+    col = val % 4
+    t = np.linspace(0, TONE_DUR, int(SAMPLE_RATE * TONE_DUR), endpoint=False)
+    # Média de duas senoides (linha + coluna)
+    sinal = (np.sin(2 * np.pi * ROWS[row] * t) + np.sin(2 * np.pi * COLS[col] * t)) / 2
+    return sinal
+
+
+def transmitir(texto):
+    quadros = montar_quadros(texto)
+    partes = []
+    
+    # Sincronização inicial
+    partes.append(gerar_tom(PREAMBLE_FREQ, PREAMBLE_DUR))
+    partes.append(gerar_silencio(SILENCE_POST_PREAMBLE))
+    
+    for q in quadros:
+        n1 = q[0:4]
+        n2 = q[4:8]
+        partes.append(gerar_dtmf(n1))
+        partes.append(gerar_silencio(GUARD_DUR))
+        partes.append(gerar_dtmf(n2))
+        partes.append(gerar_silencio(GUARD_DUR))
+        
+    audio = np.concatenate(partes)
+    print(f"[MÉTODO 2] Transmitindo via DTMF + Hamming(7,4)...")
+    tocar(audio)
+    print("[MÉTODO 2] Transmissão concluída.")
+
+
+# ---------------- Recepção ----------------
+
 def encontrar_inicio_payload(sinal):
     janela_busca = int(SAMPLE_RATE * 0.02)  
     passo = int(SAMPLE_RATE * 0.005)        
 
     if len(sinal) < janela_busca:
-        return -1, 0
-
-    # 1. Achar o pico de energia do preâmbulo (3000 Hz)
+        return -1
+        
+    # 1. Encontrar o Preâmbulo
     energias_pre = [goertzel_energia(sinal[i:i+janela_busca], PREAMBLE_FREQ) 
                     for i in range(0, len(sinal) - janela_busca, passo)]
     
-    if not energias_pre: return -1, 0
+    if not energias_pre: return -1
     max_e_pre = max(energias_pre)
-    if max_e_pre < 0.0001: 
-        return -1, 0
+    if max_e_pre < 0.0001: return -1
         
     limiar_pre = max_e_pre * 0.3
     inicio_preambulo = -1
@@ -93,107 +115,121 @@ def encontrar_inicio_payload(sinal):
             inicio_preambulo = idx * passo
             break
             
-    if inicio_preambulo == -1: return -1, 0
+    if inicio_preambulo == -1: return -1
     
-    # 2. Procurar o início dos bits FSK após o preâmbulo
-    busca_bits_inicio = inicio_preambulo + int(SAMPLE_RATE * (PREAMBLE_DUR + 0.05))
+    # 2. Procurar o início dos tons DTMF após o silêncio de guarda
+    inicio_busca_dtmf = inicio_preambulo + int(SAMPLE_RATE * (PREAMBLE_DUR + SILENCE_POST_PREAMBLE - 0.05))
+    restante = sinal[inicio_busca_dtmf:]
     
-    restante = sinal[busca_bits_inicio:]
-    if len(restante) < janela_busca:
-        return -1, 0
-        
-    energias_fsk = []
+    energias_dtmf = []
     for i in range(0, len(restante) - janela_busca, passo):
-        e0 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT0)
-        e1 = goertzel_energia(restante[i:i+janela_busca], FREQ_BIT1)
-        energias_fsk.append(max(e0, e1))
+        e = sum(goertzel_energia(restante[i:i+janela_busca], f) for f in ROWS + COLS)
+        energias_dtmf.append(e)
         
-    if not energias_fsk: return -1, 0
-    max_e_fsk = max(energias_fsk)
-    if max_e_fsk < 0.0001:
-        return -1, 0
-        
-    limiar_fsk = max_e_fsk * 0.3
-    for idx, e in enumerate(energias_fsk):
-        if e >= limiar_fsk:
-            return busca_bits_inicio + (idx * passo), max_e_fsk
+    if not energias_dtmf: return -1
+    max_e_dtmf = max(energias_dtmf)
+    if max_e_dtmf < 0.0001: return -1
+    
+    limiar_dtmf = max_e_dtmf * 0.3
+    for idx, e in enumerate(energias_dtmf):
+        if e >= limiar_dtmf:
+            return inicio_busca_dtmf + (idx * passo)
             
-    return -1, 0
+    return -1
 
 
-def demodular_bits(sinal, energia_ref):
-    amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
+def demodular_dtmf(sinal):
+    amostras_tom = int(SAMPLE_RATE * TONE_DUR)
+    amostras_guarda = int(SAMPLE_RATE * GUARD_DUR)
+    passo_simbolo = amostras_tom + amostras_guarda
+    
     bits = []
     
-    for i in range(len(sinal) // amostras_por_simbolo):
-        ini = i * amostras_por_simbolo
-        janela = sinal[ini:ini + amostras_por_simbolo]
-        if len(janela) < amostras_por_simbolo:
+    for i in range(0, len(sinal), passo_simbolo):
+        janela = sinal[i : i + amostras_tom]
+        if len(janela) < amostras_tom // 2:
             break
             
-        e0 = goertzel_energia(janela, FREQ_BIT0)
-        e1 = goertzel_energia(janela, FREQ_BIT1)
+        e_rows = [goertzel_energia(janela, f) for f in ROWS]
+        e_cols = [goertzel_energia(janela, f) for f in COLS]
         
-        bits.append(1 if e1 > e0 else 0)
+        row = np.argmax(e_rows)
+        col = np.argmax(e_cols)
+        nibble = row * 4 + col
+        
+        bits.extend([(nibble >> 3) & 1, (nibble >> 2) & 1, (nibble >> 1) & 1, nibble & 1])
         
     return bits
 
 
-def receber():
-    def live_decode(sinal):
-        inicio, ref = encontrar_inicio_payload(sinal)
-        if inicio == -1 or inicio >= len(sinal):
-            return []
-        sinal_alinhado = sinal[inicio:]
-        return demodular_bits(sinal_alinhado, ref)
-
-    sinal = gravar(live_decode)
-
-    inicio, ref = encontrar_inicio_payload(sinal)
-    if inicio == -1 or inicio >= len(sinal):
-        print("[MÉTODO 2] Nenhum preâmbulo detectado.")
-        return "", 0, 0
-        
-    sinal_alinhado = sinal[inicio:]
-
-    bits = demodular_bits(sinal_alinhado, ref)
-    return validar_e_decodificar(bits)
-
-
 def validar_e_decodificar(bits):
-    dados_validos = []
+    dados_extraidos = []
     quadros_ok = 0
+    quadros_corrigidos = 0
     quadros_falha = 0
     i = 0
 
-    # Cria a string com todos os bits recebidos separados por espaço
     bits_recebidos_str = " ".join(str(b) for b in bits)
 
-    while i + 16 <= len(bits):
-        dados = bits[i:i + 8]
-        crc_recebido = bits[i + 8:i + 16]
+    while i + 8 <= len(bits):
+        b = bits[i:i+8]
+        s1 = b[1] ^ b[3] ^ b[5] ^ b[7]
+        s2 = b[2] ^ b[3] ^ b[6] ^ b[7]
+        s3 = b[4] ^ b[5] ^ b[6] ^ b[7]
+        syndrome = s1 + (s2 << 1) + (s3 << 2)
         
-        # Verifica se o CRC-8 recebido bate com o calculado
-        if crc_recebido == crc8(dados):
+        overall_parity = b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] ^ b[6] ^ b[7]
+        
+        if syndrome == 0 and overall_parity == 0:
+            print("[SUCESSO] Quadro íntegro")
             quadros_ok += 1
-            dados_validos.extend(dados)
+            dados_extraidos.extend([b[3], b[5], b[6], b[7]])
+            
+        elif syndrome != 0 and overall_parity == 1:
+            print(f"[SUCESSO] Quadro corrigido (erro no bit {syndrome} corrigido pelo Hamming)")
+            quadros_corrigidos += 1
+            b_corrigido = list(b)
+            b_corrigido[syndrome] ^= 1
+            dados_extraidos.extend([b_corrigido[3], b_corrigido[5], b_corrigido[6], b_corrigido[7]])
+            
+        elif syndrome == 0 and overall_parity == 1:
+            print("[SUCESSO] Quadro corrigido (erro no bit de paridade geral ignorado)")
+            quadros_corrigidos += 1
+            dados_extraidos.extend([b[3], b[5], b[6], b[7]])
+            
         else:
+            print("[FALHA DE TRANSMISSÃO] Dados corrompidos (erro múltiplo)")
             quadros_falha += 1
-        
-        i += 16
+            # Inserir zeros para manter o alinhamento dos bytes seguintes
+            dados_extraidos.extend([0, 0, 0, 0])
+            
+        i += 8
 
-    texto = bits_para_texto(dados_validos) if dados_validos else ""
+    texto = bits_para_texto(dados_extraidos) if dados_extraidos else ""
     
-    # Exibe a mensagem final incluindo a sequência de bits
-    if quadros_ok > 0:
-        msg = f"[SUCESSO] {quadros_ok} quadro(s) íntegro(s)."
-        if quadros_falha > 0:
-            msg += f" (Ignorados {quadros_falha} blocos de ruído/erro)"
-        print(f"{msg}\nMensagem: {texto!r} | Bits totais capturados: {bits_recebidos_str}")
-    else:
-        if len(bits) > 0:
-            print(f"[RESULTADO] Nenhum quadro válido. ({quadros_falha} blocos corrompidos/ruído) | Bits totais capturados: {bits_recebidos_str}")
-        else:
-            print(f"[RESULTADO] Nenhum bit detectado.")
+    total_sucesso = quadros_ok + quadros_corrigidos
+    print(f"\n[RESULTADO FINAL]")
+    print(f"Quadros Íntegros: {quadros_ok}")
+    print(f"Quadros Corrigidos: {quadros_corrigidos}")
+    print(f"Quadros com Falha: {quadros_falha}")
+    print(f"Mensagem: {texto!r} | Bits capturados: {bits_recebidos_str}")
 
-    return texto, quadros_ok, quadros_falha
+    return texto, total_sucesso, quadros_falha
+
+
+def receber():
+    def live_decode(sinal):
+        inicio = encontrar_inicio_payload(sinal)
+        if inicio == -1 or inicio >= len(sinal):
+            return []
+        return demodular_dtmf(sinal[inicio:])
+
+    sinal = gravar(live_decode)
+
+    inicio = encontrar_inicio_payload(sinal)
+    if inicio == -1 or inicio >= len(sinal):
+        print("[MÉTODO 2] Nenhum preâmbulo detectado.")
+        return "", 0, 0
+
+    bits = demodular_dtmf(sinal[inicio:])
+    return validar_e_decodificar(bits)

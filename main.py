@@ -33,7 +33,7 @@ def menu():
 
     print("\nMétodo:")
     print("1) Método 1 - Obrigatório (batidas sonoras, quadro de 9 bits, paridade)")
-    print("2) Método 2 - Livre escolha (FSK + CRC-8)")
+    print("2) Método 2 - Livre escolha (DTMF + Hamming(7,4))")
     metodo = input("Escolha o método [1/2]: ").strip()
 
     if metodo not in ['1', '2']:
