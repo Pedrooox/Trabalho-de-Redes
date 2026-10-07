@@ -60,27 +60,27 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 ## Explicação dos outros arquivos: 
 ### Main.py
 
-O main.py e responsavel por gerencia ar a experiencia do usuario mostrnado um menu interativo com opcoes para que o usuario possa escolher o entre transmissao ou recpsao e o metodo. E nele que recebe a mensagem a ser inviada e manda para o metodo requisitado. 
+O main.py é responsável por gerenciar a experiência do usuário, mostrando um menu interativo com opções para escolher entre transmissão ou recepção e qual método utilizar. É nele que o sistema recebe a mensagem a ser enviada e a direciona para o método requisitado.
 
 ### Arquivos de Teste e Validação
 
-Esses arquivos servem para validar individualmente cada metodo sem a nessecidade de emissao de audio.
+Esses arquivos servem para validar individualmente cada método sem a necessidade de emissão de áudio.
 
 **test_loopback.py**
-Responsavel por mostra um menu interativo para que o usuario possa testar cada metodo de uma maneira diferente, 
+Responsável por mostrar um menu interativo para que o usuário possa testar cada método de uma maneira diferente, por exemplo: testar o metodo 1 com quadros incompletos.
 
-**test_loopback1.py**
-Valida o metodo 1 fazendo um fluxo normal onde ele executa um ciclo completo de tranmeissao e recepcao sem ruido. Tambem testa um fluxo incompleto, onde ele testa quadros incmpletos para validar a decodificao.
+**test_method1.py**
+Valida o Método 1 executando um fluxo normal (ciclo completo de transmissão e recepção sem ruído) e um fluxo com sinal truncado (para validar a decodificação de quadros incompletos)..
 
-**test_loopback2.py**
-Valida o metodo 2 fazendo um fluxo normal, onde ele testa a integridade da modulação FSK, o alinhamento de frequência e a detecção de erros por CRC-8. tambem testa quadros icompletos e incompletos para mostrar que o mecanismo de CRC-8 identifica a corrupção e rejeita o quadro, e o envio de um sinal truncado com quadros incompletos.
+**test_method2.py**
+Valida o Método 2 testando a modulação FSK, o alinhamento de frequência e a detecção de erros por CRC-8. Testa um fluxo normal, um fluxo com corrupção de bit (para mostrar que o mecanismo de CRC-8 identifica a falha e rejeita o quadro) e o envio de um sinal truncado com quadros incompletos.
 
 **Divisão de Tarefas para cada membro da equipe:**  
-Eduardo Giroto:  
-Pedro Frederico:  
-Nicolas Nakaie:  
-Kauã Lopes: Pesquisa, documentação, planejamento e software ( arquivos de teste ). 
-Walter Aurélio:  
+Eduardo Giroto: Planejameto, video e software (fez a base do metodo 1 e main.py)
+Pedro Frederico: Planejamento, video e testador  
+Nicolas Nakaie:  Planejamento, testador, pesquisa, software ( metodo 2) 
+Kauã Lopes: Pesquisa, documentacao, planejamento e software ( arquivos de teste e metodo 2 ). 
+Walter Aurélio: Planejamento, documentacao e testador 
 
 ## Desafios, Problemas e Soluções:  
 ### Validação e Deteção de Corrupção de Dados (Paridade)
