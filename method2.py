@@ -11,9 +11,9 @@ from common import (SAMPLE_RATE, gerar_tom, tocar, gravar,
                      texto_para_bits, bits_para_texto, PREAMBLE_DUR)
 
 # Frequências do "Morse Frequencial"
-FREQ_BIT0 = 2000         # Hz para o bit 0 (Ponto)
-FREQ_BIT1 = 3500         # Hz para o bit 1 (Traço)
-DURACAO_SIMBOLO = 0.04   # s por bit (40 ms, muito mais rápido que o Método 1)
+FREQ_BIT0 = 4000         # Hz para o bit 0 (Ponto)
+FREQ_BIT1 = 5000         # Hz para o bit 1 (Traço)
+DURACAO_SIMBOLO = 0.08   # s por bit (40 ms, muito mais rápido que o Método 1)
 BITS_CRC = 8
 
 
@@ -49,11 +49,15 @@ def bits_para_audio(bits):
 
 
 def transmitir(texto):
+    from common import gerar_silencio
     quadros = montar_quadros(texto)
     todos_bits = [b for q in quadros for b in q]
     
-    # Gera diretamente o áudio com as frequências do Morse Adaptado
-    audio = bits_para_audio(todos_bits)
+    # Gera o áudio com as frequências do Morse Adaptado
+    audio_dados = bits_para_audio(todos_bits)
+    
+    # FIX: Envelopa os dados com silêncio (0.2s início, 0.4s final)
+    audio = np.concatenate([gerar_silencio(0.2), audio_dados, gerar_silencio(0.4)])
     
     print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via Morse/FSK...")
     tocar(audio)
@@ -128,12 +132,17 @@ def encontrar_inicio_fsk(sinal):
 
 
 def receber():
+    from common import gerar_silencio
     sinal = gravar() # Aguarda o utilizador gravar o áudio
     
     inicio = encontrar_inicio_fsk(sinal)
     sinal_alinhado = sinal[inicio:]
     
-    # Chama a demodulação via FFT com o sinal já alinhado
+    # FIX: Adiciona 0.5s de silêncio (zeros) no final do array.
+    # Garante que a janela do último bit nunca seja cortada por falta de amostras.
+    sinal_alinhado = np.concatenate([sinal_alinhado, gerar_silencio(0.5)])
+    
+    # Chama a demodulação via FFT com o sinal já alinhado e estendido
     bits = demodular_bits(sinal_alinhado)
     return validar_e_decodificar(bits)
 
