@@ -29,6 +29,8 @@ Crc-8 no Método 2
     
 O código exige o interpretador Python instalado e as bibliotecas `numpy` (para manipulação de arrays e processamento digital de sinais) e `sounddevice` (para reprodução e gravação de áudio via interface de som).
 
+# Engenharia e Arquitetura das Soluções
+
 ## Explicação do Método 1:  
    
 O 'Método 1', como solicitado, traz uma abordagem mais simples e padronizada, baseada em impactos sonoros (batida de palmas, batida com a mão em alguma superfície, sons com a boca, etc.) onde a mensagem é transmitido em quadros de 9 bits. Para o algoritmo, uma batida representa 0, e duas batidas consecutivas 1, ele recebe as batidas dentro do intervalo de tempo e valida a paridade de cada quadro de 9 bits para garantir que a mensagem não foi corrompida pelo ruído do ambiente. 
@@ -55,12 +57,30 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 ### Utilização - Recepção
 O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
 
+## Explicação dos outros arquivos: 
+### Main.py
+
+O main.py é responsável por gerenciar a experiência do usuário, mostrando um menu interativo com opções para escolher entre transmissão ou recepção e qual método utilizar. É nele que o sistema recebe a mensagem a ser enviada e a direciona para o método requisitado.
+
+### Arquivos de Teste e Validação
+
+Esses arquivos servem para validar individualmente cada método sem a necessidade de emissão de áudio.
+
+**test_loopback.py**
+Responsável por mostrar um menu interativo para que o usuário possa testar cada método de uma maneira diferente, por exemplo: testar o metodo 1 com quadros incompletos.
+
+**test_method1.py**
+Valida o Método 1 executando um fluxo normal (ciclo completo de transmissão e recepção sem ruído) e um fluxo com sinal truncado (para validar a decodificação de quadros incompletos)..
+
+**test_method2.py**
+Valida o Método 2 testando a modulação FSK, o alinhamento de frequência e a detecção de erros por CRC-8. Testa um fluxo normal, um fluxo com corrupção de bit (para mostrar que o mecanismo de CRC-8 identifica a falha e rejeita o quadro) e o envio de um sinal truncado com quadros incompletos.
+
 **Divisão de Tarefas para cada membro da equipe:**  
-Eduardo Giroto:  
-Pedro Frederico:  
-Nicolas Nakaie:  
-Kauã Lopes: Pesquisa, documentação, planejamento e software ( arquivos de teste ). 
-Walter Aurélio:  
+Eduardo Giroto: Planejameto, video e software (fez a base do metodo 1 e main.py)
+Pedro Frederico: Planejamento, video e testador  
+Nicolas Nakaie:  Planejamento, testador, pesquisa, software ( metodo 2) 
+Kauã Lopes: Pesquisa, documentacao, planejamento e software ( arquivos de teste e metodo 2 ). 
+Walter Aurélio: Planejamento, documentacao e testador 
 
 ## Desafios, Problemas e Soluções:  
 ### Validação e Deteção de Corrupção de Dados (Paridade)
