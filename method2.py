@@ -92,6 +92,20 @@ def demodular_bits(sinal):
     # Calcula quantos bits cabem no áudio gravado
     n_bits = len(sinal) // amostras_por_simbolo 
     
+    # Encontra a energia máxima para definir um limiar de corte de ruído (fim da mensagem)
+    energias_simbolos = []
+    for i in range(n_bits):
+        ini = i * amostras_por_simbolo
+        janela = sinal[ini:ini + amostras_por_simbolo]
+        if len(janela) == amostras_por_simbolo:
+            e0, e1 = obter_energias_fsk_fft(janela)
+            energias_simbolos.append(max(e0, e1))
+            
+    # Usamos uma fração muito pequena (0.1% em vez de 5%) da energia máxima.
+    # O Controle Automático de Ganho (AGC) do Windows abaixa muito o volume 
+    # ao longo da gravação, o que estava cortando o áudio prematuramente.
+    limiar_energia = max(energias_simbolos) * 0.001 if energias_simbolos else 0.0
+
     bits = []
     for i in range(n_bits):
         ini = i * amostras_por_simbolo
@@ -100,7 +114,12 @@ def demodular_bits(sinal):
             break
             
         e0, e1 = obter_energias_fsk_fft(janela)
-        # Se a energia em 3500Hz for maior, é um Traço (Bit 1), senão é Ponto (Bit 0)
+        
+        # Se a energia cair abaixo do limiar, a transmissão acabou (ruído/silêncio)
+        if max(e0, e1) < limiar_energia:
+            break
+            
+        # Se a energia em 5000Hz (FREQ_BIT1) for maior, é um Traço (Bit 1), senão é Ponto (Bit 0)
         bits.append(1 if e1 > e0 else 0)
     return bits
 
@@ -110,12 +129,14 @@ def encontrar_inicio_fsk(sinal):
     janela = int(SAMPLE_RATE * 0.01)  # Janela de 10ms
     passo = int(SAMPLE_RATE * 0.002)  # Avança de 2 em 2ms
     
-    # Descobre o nível de ruído da sala no início da gravação
+    # Descobre o nível de ruído da sala no início da gravação (primeiros 0.1s)
     energias = []
-    for i in range(0, min(len(sinal) - janela, int(SAMPLE_RATE * 0.5)), passo):
-        trecho = sinal[i:i + janela]
-        e0, e1 = obter_energias_fsk_fft(trecho)
-        energias.append(max(e0, e1))
+    limite_ruido = min(len(sinal) - janela, int(SAMPLE_RATE * 0.1))
+    if limite_ruido > 0:
+        for i in range(0, limite_ruido, passo):
+            trecho = sinal[i:i + janela]
+            e0, e1 = obter_energias_fsk_fft(trecho)
+            energias.append(max(e0, e1))
     
     ruido_fundo = np.mean(energias) if energias else 0.0001
     limiar_deteccao = max(ruido_fundo * 5, 0.001)
@@ -126,14 +147,26 @@ def encontrar_inicio_fsk(sinal):
         e0, e1 = obter_energias_fsk_fft(trecho)
         
         if max(e0, e1) > limiar_deteccao:
-            return i
+            # Retorna um pouco antes para não cortar a subida do sinal
+            return max(0, i - int(SAMPLE_RATE * 0.002))
 
     return 0
 
 
 def receber():
     from common import gerar_silencio
-    sinal = gravar() # Aguarda o utilizador gravar o áudio
+    
+    def live_decode(sinal_atual):
+        # Evita processar ao vivo se o sinal for muito curto
+        if len(sinal_atual) < int(SAMPLE_RATE * 0.1):
+            return []
+        inicio = encontrar_inicio_fsk(sinal_atual)
+        if inicio == 0 and np.max(np.abs(sinal_atual)) < 0.05:
+            return []
+        sinal_alinhado = sinal_atual[inicio:]
+        return demodular_bits(sinal_alinhado)
+        
+    sinal = gravar(live_decode) # Aguarda o utilizador gravar o áudio
     
     inicio = encontrar_inicio_fsk(sinal)
     sinal_alinhado = sinal[inicio:]
