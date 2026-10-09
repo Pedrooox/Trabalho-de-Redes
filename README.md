@@ -22,12 +22,13 @@ Modulação: É o processo de alterar uma ou mais características de uma onda p
 
 ## Detecção de Erros
 
-Mesmo que a verificação da integridade dos bits seja uma função da Camada de Enlace, ela foi implementada nesse projeto para ajudar a entender e identificar os possiveis erros de transmissão. Para isso fo utilizado. Paridade Par no Método 1, que funciona com base nos 9 primeiros bits onde ele verifica se no total de bits 1 tem par.
-Crc-8 no Método 2
+Mesmo que a verificação da integridade dos bits seja uma função da Camada de Enlace, ela foi implementada nesse projeto para ajudar a entender e identificar os possiveis erros de transmissão. Para isso fo utilizado. 
+**Paridade Par Método 1:** a mensagem é dividida em quadros fixos de 9 bits (8 bits de dados UTF-8 + 1 bit de paridade).
+**Crc-8 no Método 2:** a mensagem é transmitida em quadros de 16 bits (8 bits de dados + 8 bits de código de verificação CRC). 
 
 ## Pré-requisitos
     
-O código exige o interpretador Python instalado e as bibliotecas `numpy` (para manipulação de arrays e processamento digital de sinais) e `sounddevice` (para reprodução e gravação de áudio via interface de som).
+O código exige o interpretador Python e o pip instalado e as bibliotecas `numpy` (para manipulação de arrays e processamento digital de sinais) e `sounddevice` (para reprodução e gravação de áudio via interface de som).
 
 # Engenharia e Arquitetura das Soluções
 
@@ -91,11 +92,11 @@ Valida o Método 1 executando um fluxo normal (ciclo completo de transmissão e 
 Valida o Método 2 testando a modulação FSK, o alinhamento de frequência e a detecção de erros por CRC-8. Testa um fluxo normal, um fluxo com corrupção de bit (para mostrar que o mecanismo de CRC-8 identifica a falha e rejeita o quadro) e o envio de um sinal truncado com quadros incompletos.
 
 **Divisão de Tarefas para cada membro da equipe:**  
-Eduardo Giroto: Planejameto, video e software (fez a base do metodo 1 e main.py)
-Pedro Frederico: Planejamento, video e testador  
-Nicolas Nakaie:  Planejamento, testador, pesquisa, software ( metodo 2) 
-Kauã Lopes: Pesquisa, documentacao, planejamento e software ( arquivos de teste e metodo 2 ). 
-Walter Aurélio: Planejamento, documentacao e testador 
+**Eduardo Giroto:** Planejameto, video e software (fez a base do metodo 1 e main.py)
+**Pedro Frederico:** Planejamento, video e testador  
+**Nicolas Nakaie:**  Planejamento, testador, pesquisa, software ( metodo 2) 
+**Kauã Lopes:** Pesquisa, documentacao, planejamento e software ( arquivos de teste e metodo 2 ). 
+**Walter Aurélio:** Planejamento, documentacao e testador 
 
 ## Desafios, Problemas e Soluções:  
 ### Validação e Deteção de Corrupção de Dados (Paridade)
@@ -106,11 +107,11 @@ Solução: A funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit re
 Problema: Caso a gravacao fosse interrompida ou desse erro por causa de ruido, ocorria um desalinhamento na contagem dos bits, o que causava problemas ao tentar converter os bytes incompletos.
 Solução: Foi implementada uma lógica de validação parcial nos dois metodos. O código agora contabiliza os quadros íntegros e transcreve a mesnsagem (caracter e bits) obtida até o limite válido. Ao chegar nos quadros corrompidos o sistema um aviso detalhando o erro e indincando a quantidade de bits que faltaram para fechar o quadro. 
 
-**Declaração do Uso de Inteligência Artificial:**  
+## Declaração do Uso de Inteligência Artificial: 
 Utilizamos as Inteligências Artificiais para gerar os códigos iniciais e suas implementações, assim como alterações e correções feitas durante o processo e desenvolvimento do trabalho. As IAs também foram utilizadas como ferramenta para estudos e explicações para maior compreensão dos códigos e do trabalho como um todo.
 Claude: Códigos iniciais;
 Google Gemini: Novos códigos, pesquisas, dúvidas, alterações dos códigos;
 Google Antigravity: Utilizado junto ao VS Code para alterações dos códigos e correção de erros.
 
-**Conclusão:**  
-O trabalho nos permitiu, como grupo, observar as principais dificuldades e desafios presentes na camada Física. Ao utilizar frequências sonoras para transportar dados, os ruídos e frequências externas são um empecilho que atrapalham o programa de ler os sons e reconhecer a mensagem transmitida, assim como precisamos de formas dentro do código para controle de erros, como o bit de paridade par e preâmbulo. De forma prática aprendemos como contornar essas interferências e buscar através de tentativa e erro, pesquisa e alterações no código, as melhores maneiras de receber e transmitir esses dados com maior precisão.
+## Conclusão:  
+O trabalho nos permitiu, como grupo, observar as principais dificuldades e desafios presentes na camada Física. Ao utilizar frequências sonoras para transportar dados, os ruídos e frequências externas são um empecilho que atrapalham o programa de ler os sons e reconhecer a mensagem transmitida, assim como precisamos de formas dentro do código para controle de erros, como o bit de paridade par e CRC-8. Tivemos bastante trabalho com o metodo 2, onde foi necessario refazer-lo para que conseguissemoos um resultado empolgante, onde foi trocado o algoritimo de goertzel para o FFT, e melhoras o nosso entendimento com o fsk e crc-8. De forma prática aprendemos como contornar essas interferências e buscar através de tentativa e erro, pesquisa e alterações no código, as melhores maneiras de receber e transmitir esses dados com maior precisão.
