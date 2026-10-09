@@ -66,11 +66,11 @@ O **CRC-8 (Cyclic Redundancy Check)** é um método matemático altamente robust
 **Na Recepção:** Ao receber o quadro de 16 bits pelo ar, o receptor divide a sequência completa pelo mesmo polinômio gerador. Se o resto da divisão for igual a zero (ou o CRC recalculado for idêntico ao recebido), matematicamente prova-se que o quadro não sofreu interferências de fase, ecos ou ruídos durante a propagação no ar, caso contrario a validação falha e o quadro corrompido é rejeitado.
 
 ### Utilização - Transmissão
-O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'.
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem' e 0 para 'Sair', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'.
 'Digite a mensagem a transmitir' será exibido no terminal, basta digitar a mensagem e pressionar Enter, e então a transmissão será iniciada, utilizando 8 bits via FSK, 2000 Hz para bit 0 e 3200 Hz para bit 1.
 
 ### Utilização - Recepção
-O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem' e 0 para 'Sair', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
 
 ## Explicação dos outros arquivos: 
 ### Main.py
@@ -107,5 +107,10 @@ Problema: Caso a gravacao fosse interrompida ou desse erro por causa de ruido, o
 Solução: Foi implementada uma lógica de validação parcial nos dois metodos. O código agora contabiliza os quadros íntegros e transcreve a mesnsagem (caracter e bits) obtida até o limite válido. Ao chegar nos quadros corrompidos o sistema um aviso detalhando o erro e indincando a quantidade de bits que faltaram para fechar o quadro. 
 
 **Declaração do Uso de Inteligência Artificial:**  
+Utilizamos as Inteligências Artificiais para gerar os códigos iniciais e suas implementações, assim como alterações e correções feitas durante o processo e desenvolvimento do trabalho. As IAs também foram utilizadas como ferramenta para estudos e explicações para maior compreensão dos códigos e do trabalho como um todo.
+Claude: Códigos iniciais;
+Google Gemini: Novos códigos, pesquisas, dúvidas, alterações dos códigos;
+Google Antigravity: Utilizado junto ao VS Code para alterações dos códigos e correção de erros.
 
 **Conclusão:**  
+O trabalho nos permitiu, como grupo, observar as principais dificuldades e desafios presentes na camada Física. Ao utilizar frequências sonoras para transportar dados, os ruídos e frequências externas são um empecilho que atrapalham o programa de ler os sons e reconhecer a mensagem transmitida, assim como precisamos de formas dentro do código para controle de erros, como o bit de paridade par e preâmbulo. De forma prática aprendemos como contornar essas interferências e buscar através de tentativa e erro, pesquisa e alterações no código, as melhores maneiras de receber e transmitir esses dados com maior precisão.
