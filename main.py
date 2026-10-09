@@ -33,7 +33,7 @@ def menu():
 
     print("\nMétodo:")
     print("1) Método 1 - (batidas sonoras, paridade)")
-    print("2) Método 2 - (Morse/FSK + CRC-8)")
+    print("2) Método 2 - (FSK + CRC-8)")
     metodo = input("Escolha o método [1/2]: ").strip()
 
     if metodo not in ['1', '2']:

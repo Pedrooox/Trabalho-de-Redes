@@ -1,8 +1,7 @@
 """
 Método 2 - Modulação "Morse Frequencial" (2-FSK) + Detecção de erros via CRC-8
-Adaptação do Código Morse para alta velocidade:
- - "Ponto" (Bit 0) -> Tom de 2000 Hz
- - "Traço" (Bit 1) -> Tom de 3500 Hz
+ -  (Bit 0) -> Tom de 2000 Hz
+ -  (Bit 1) -> Tom de 3500 Hz
 Demodulação feita através da Análise de Espetro (FFT).
 """
 
@@ -11,9 +10,9 @@ from common import (SAMPLE_RATE, gerar_tom, tocar, gravar,
                      texto_para_bits, bits_para_texto, PREAMBLE_DUR)
 
 # Frequências do "Morse Frequencial"
-FREQ_BIT0 = 4000         # Hz para o bit 0 (Ponto)
-FREQ_BIT1 = 5000         # Hz para o bit 1 (Traço)
-DURACAO_SIMBOLO = 0.08   # s por bit (40 ms, muito mais rápido que o Método 1)
+FREQ_BIT0 = 4000         # Hz para o bit 0 
+FREQ_BIT1 = 5000         # Hz para o bit 1 
+DURACAO_SIMBOLO = 0.08   # 
 BITS_CRC = 8
 
 
@@ -53,13 +52,12 @@ def transmitir(texto):
     quadros = montar_quadros(texto)
     todos_bits = [b for q in quadros for b in q]
     
-    # Gera o áudio com as frequências do Morse Adaptado
     audio_dados = bits_para_audio(todos_bits)
     
     # FIX: Envelopa os dados com silêncio (0.2s início, 0.4s final)
     audio = np.concatenate([gerar_silencio(0.2), audio_dados, gerar_silencio(0.4)])
     
-    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via Morse/FSK...")
+    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via FSK...")
     tocar(audio)
     print("[MÉTODO 2] Transmissão concluída.")
     exibir_estatisticas_fsk(texto)
@@ -101,9 +99,6 @@ def demodular_bits(sinal):
             e0, e1 = obter_energias_fsk_fft(janela)
             energias_simbolos.append(max(e0, e1))
             
-    # Usamos uma fração muito pequena (0.1% em vez de 5%) da energia máxima.
-    # O Controle Automático de Ganho (AGC) do Windows abaixa muito o volume 
-    # ao longo da gravação, o que estava cortando o áudio prematuramente.
     limiar_energia = max(energias_simbolos) * 0.001 if energias_simbolos else 0.0
 
     bits = []
@@ -234,7 +229,7 @@ def exibir_estatisticas_fsk(texto_enviado):
     
     bps_util = num_bits_dados / tempo_total if tempo_total > 0 else 0
 
-    print("\n--- RESUMO DE DESEMPENHO (MÉTODO 2 - MORSE/FSK) ---")
+    print("\n--- RESUMO DE DESEMPENHO (MÉTODO 2 - FSK) ---")
     print(f"Tempo Total de Transmissão: {tempo_total:.2f} s")
     print(f"Velocidade Efetiva (Payload):  {bps_util:.2f} bps")
     print("--------------------------------------------------\n")
