@@ -33,14 +33,21 @@ O código exige o interpretador Python instalado e as bibliotecas `numpy` (para 
 
 ## Explicação do Método 1:  
    
-O 'Método 1', como solicitado, traz uma abordagem mais simples e padronizada, baseada em impactos sonoros (batida de palmas, batida com a mão em alguma superfície, sons com a boca, etc.) onde a mensagem é transmitido em quadros de 9 bits. Para o algoritmo, uma batida representa 0, e duas batidas consecutivas 1, ele recebe as batidas dentro do intervalo de tempo e valida a paridade de cada quadro de 9 bits para garantir que a mensagem não foi corrompida pelo ruído do ambiente. 
+O 'Método 1', como solicitado, traz uma abordagem mais simples e padronizada, com uma abordagem de comunicação acústica baseada em sinais de impacto ou pulsos sonoros curtos (batida de palmas, batida com a mão em alguma superfície ou beeps de áudio, etc.)mensagem é dividida e transmitida em quadros estruturados de 9 bits (8 bits de dados úteis + 1 bit de paridade). Para o algoritmo, uma batida + intervalo representa 0, e duas batidas consecutivas + intervalo representa 1. O recptor recebe as batidas no audio, agrupa e valida a paridade de cada quadro de 9 bits para garantir que a mensagem não foi corrompida pelo ruído do ambiente. 
+
+### Detecção de Erros via Paridade Par
+A Paridade Par é um mecanismo simples e eficaz de checagem de erros na camada de enlace. O seu funcionamento ocorre em duas etapas:
+
+**Na Transmissão:** O software analisa os 8 bits de dados (UTF-8) do caractere e conta a quantidade de bits 1 presentes, Se a contagem de bits 1 for ímpar, o 9º bit (bit de paridade) é definido como 1, garantindo que a soma total de bits 1 no quadro de 9 bits seja sempre um número par. Se a contagem já for par, o 9º bit é definido como 0
+
+**Na Recepção:** Ao captar o quadro de 9 bits pelo áudio, o software calcula novamente a paridade sobre os 8 primeiros bits de dados recebidos. Se o bit de paridade calculado for igual ao 9º bit captado no áudio, o quadro é validado e convertido em texto. Caso haja divergência (provocada por uma batida perdida ou por um eco/ruído captado erroneamente), o sistema detecta a corrupção e rejeita o quadro. 
 
 ### Utilização - Transmissão
-O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'.
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem', 2 para 'Receber mensagem' e 0 para 'sair', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'.
 'Digite a mensagem a transmitir' será exibido no terminal, basta digitar a mensagem e pressionar Enter, e então a transmissão será iniciada.
 
 ### Utilização - Recepção
-O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
+O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem', 2 para 'Receber mensagem'e 0 para 'sair', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
 
 ## Explicação do Método 2:  
 
