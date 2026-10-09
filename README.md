@@ -1,7 +1,8 @@
+
+
 ## Fundamentação Teórica 
 
-
-## Modelo ISO OSI
+### Modelo ISO OSI
 Física: Pega os bits e os transforma em uma forma de comunicação interpretável pelo meio de transmissão
 Enlace: Transforma um canal bruto em uma linha que parece livre de erros. Usando a detecção de erros, evita mandar muitas mensagens para um dispositivo mais lento e gerencia o endereço físico e o controle de acesso ao meio.
 Redes: Responsável pelo endereçamento lógico e pelo roteamento
@@ -10,7 +11,7 @@ Sessão: Estabelece e encerra uma sessão de comunicação entre o transmissor e
 Apresentação: Faz a tradução e criptografia dos dados.
 Aplicação: Funciona como uma interface com o usuario (software) e a rede.
 
-## Camada Física
+### Camada Física
 
 A Camada Física é a primeira camada do modelo OSI, sendo a base de toda a comunicação de rede. Ela é responsável pela transmissão e recepção de um fluxo de bits brutos não estruturados através de um meio de comunicação físico.
 
@@ -20,19 +21,21 @@ Largura de Banda: Em telecomunicações e na física de redes, refere-se à dife
 
 Modulação: É o processo de alterar uma ou mais características de uma onda periódica (chamada de onda portadora) com um sinal modulador que contém a informação real. Ao variar propriedades como amplitude, frequência ou fase, a modulação permite adequar o sinal para que ele viaje longas distâncias pelo meio físico sem perder sua integridade.
 
-## Detecção de Erros
+### Detecção de Erros
 
 Mesmo que a verificação da integridade dos bits seja uma função da Camada de Enlace, ela foi implementada nesse projeto para ajudar a entender e identificar os possiveis erros de transmissão. Para isso fo utilizado. 
+
 **Paridade Par Método 1:** a mensagem é dividida em quadros fixos de 9 bits (8 bits de dados UTF-8 + 1 bit de paridade).
+
 **Crc-8 no Método 2:** a mensagem é transmitida em quadros de 16 bits (8 bits de dados + 8 bits de código de verificação CRC). 
 
-## Pré-requisitos
+### Pré-requisitos
     
 O código exige o interpretador Python e o pip instalado e as bibliotecas `numpy` (para manipulação de arrays e processamento digital de sinais) e `sounddevice` (para reprodução e gravação de áudio via interface de som).
 
-# Engenharia e Arquitetura das Soluções
+## Engenharia e Arquitetura das Soluções
 
-## Explicação do Método 1:  
+### Explicação do Método 1:  
    
 O 'Método 1', como solicitado, traz uma abordagem mais simples e padronizada, com uma abordagem de comunicação acústica baseada em sinais de impacto ou pulsos sonoros curtos (batida de palmas, batida com a mão em alguma superfície ou beeps de áudio, etc.)mensagem é dividida e transmitida em quadros estruturados de 9 bits (8 bits de dados úteis + 1 bit de paridade). Para o algoritmo, uma batida + intervalo representa 0, e duas batidas consecutivas + intervalo representa 1. O recptor recebe as batidas no audio, agrupa e valida a paridade de cada quadro de 9 bits para garantir que a mensagem não foi corrompida pelo ruído do ambiente. 
 
@@ -63,7 +66,9 @@ Na **demodulacao** ocorre a recuperação do sinal ocorre por meio do fatiamento
 ### Detecção de Erros via CRC-8 (Cyclic Redundancy Check)
 
 O **CRC-8 (Cyclic Redundancy Check)** é um método matemático altamente robusto baseado em divisão polinomial em aritmética de módulo 2.
+
 **Na Transmissão:** O algoritmo pega os 8 bits de dados (mensagem) e aplica o polinômio gerador padrão $x^8 + x^2 + x + 1$ (representado pelo hexadecimal 0x07). O resto dessa divisão resulta em um byte de verificação (8 bits de CRC), que é anexado ao final do quadro, totalizando 16 bits.
+
 **Na Recepção:** Ao receber o quadro de 16 bits pelo ar, o receptor divide a sequência completa pelo mesmo polinômio gerador. Se o resto da divisão for igual a zero (ou o CRC recalculado for idêntico ao recebido), matematicamente prova-se que o quadro não sofreu interferências de fase, ecos ou ruídos durante a propagação no ar, caso contrario a validação falha e o quadro corrompido é rejeitado.
 
 ### Utilização - Transmissão
@@ -98,3 +103,6 @@ Google Antigravity: Utilizado junto ao VS Code para alterações dos códigos e 
 
 ## Conclusão:  
 O trabalho nos permitiu, como grupo, observar as principais dificuldades e desafios presentes na camada Física. Ao utilizar frequências sonoras para transportar dados pelo ar, os ruídos e frequências externas são um empecilho que atrapalham na recepção e decodificação da mensagem. Para contornar essas limitações do meio, tornou-se fundamental a implementação de mecanismos de controle de erros via software, como o Bit de Paridade Par e o CRC-8. O desenvolvimento do Método 2 exigiu especial atenção e dedicação. A refatoração do código — substituindo a abordagem inicial pela Transformada Rápida de Fourier (FFT) — foi um passo decisivo para alcançarmos um resultado robusto e preciso. De forma prática aprendemos como contornar essas interferências e buscar através de tentativa e erro, pesquisa e alterações no código, as melhores estratégias para transmitir e receber dados com alta precisão e confiabilidade. 
+
+### Licença
+Este projeto está licenciado sob a Licença Open-Source **MIT** — consulte o arquivo [LICENSE](LICENSE) para obter mais detalhes.
