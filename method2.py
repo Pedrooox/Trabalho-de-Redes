@@ -1,17 +1,22 @@
 """
-Método 2 (Livre Escolha) - Modulação FSK + Detecção de erros via CRC-8
-Cada bit vira um tom senoidal de frequência distinta (FSK), permitindo maior
-taxa de transmissão que o Método 1 (baseado em batidas), mantendo confiabilidade via CRC-8.
+Método 2 - Modulação usando FSK + Detecção de erros via CRC-8
+ -  (Bit 0) -> Tom de 3900 Hz
+ -  (Bit 1) -> Tom de 5000 Hz
+Demodulação feita através da Análise de Espetro (FFT).
 """
 
 import numpy as np
-from common import (SAMPLE_RATE, gerar_tom, gerar_silencio, tocar, gravar,
-                     texto_para_bits, bits_para_texto, PREAMBLE_FREQ, PREAMBLE_DUR)
+from common import (SAMPLE_RATE, gerar_tom, tocar, gravar,
+                    texto_para_bits, bits_para_texto)
 
-FREQ_BIT0 = 2000         # Hz
-FREQ_BIT1 = 3500         # Hz
-DURACAO_SIMBOLO = 0.05   # s por bit (bem mais rápido que o Método 1)
+# Frequências 
+FREQ_BIT0 = 3900         # Hz para o bit 0 
+FREQ_BIT1 = 5000         # Hz para o bit 1 
+DURACAO_SIMBOLO = 0.06   # s por bit 
 BITS_CRC = 8
+
+# Sequência de preâmbulo (10101011) para acordar o AGC e sincronizar os quadros
+PREAMBULO_BITS = [1, 0, 1, 0, 1, 0, 1, 1]
 
 
 def crc8(dados_bits):
@@ -46,12 +51,17 @@ def bits_para_audio(bits):
 
 def transmitir(texto):
     quadros = montar_quadros(texto)
-    todos_bits = [b for q in quadros for b in q]
     
-    # Gera diretamente o áudio com as frequências FSK (1200/2200 Hz)
-    audio = bits_para_audio(todos_bits)
+    # Extrai os bits dos quadros
+    bits_dados = [b for q in quadros for b in q]
     
-    print(f"[MÉTODO 2] Transmitindo {len(quadros)} quadro(s) via FSK...")
+    todos_bits = PREAMBULO_BITS + bits_dados
+    
+    audio_dados = bits_para_audio(todos_bits)
+
+    audio = np.concatenate([gerar_silencio(0.2), audio_dados, gerar_silencio(0.4)])
+    
+    print(f"[MÉTODO 2] Transmitindo preâmbulo + {len(quadros)} quadro(s) via FSK...")
     tocar(audio)
     print("[MÉTODO 2] Transmissão concluída.")
     exibir_estatisticas_fsk(texto)
@@ -59,43 +69,61 @@ def transmitir(texto):
 
 # ---------------- Recepção (demodulação via algoritmo de Goertzel) ----------------
 
-def goertzel_energia(sinal, freq):
-    """Estima a energia do sinal na frequência 'freq' (mais leve que uma FFT completa)."""
-    n = len(sinal)
-    if n == 0:
-        return 0.0
-    k = int(0.5 + n * freq / SAMPLE_RATE)
-    w = (2 * np.pi / n) * k
-    coef = 2 * np.cos(w)
-    s_prev = s_prev2 = 0.0
-    for amostra in sinal:
-        s = amostra + coef * s_prev - s_prev2
-        s_prev2, s_prev = s_prev, s
-    return s_prev2 ** 2 + s_prev ** 2 - coef * s_prev * s_prev2
+def obter_energias_fsk_fft(sinal):
+    """Calcula a energia nas frequências FSK utilizando a FFT (numpy)."""
+    if len(sinal) == 0:
+        return 0.0, 0.0
+    
+    espetro = np.fft.rfft(sinal)
+    frequencias = np.fft.rfftfreq(len(sinal), 1/SAMPLE_RATE)
+    
+    energias = np.abs(espetro) ** 2
+    
+    idx_e0 = np.argmin(np.abs(frequencias - FREQ_BIT0))
+    idx_e1 = np.argmin(np.abs(frequencias - FREQ_BIT1))
+    
+    return energias[idx_e0], energias[idx_e1]
 
 
 def demodular_bits(sinal):
+    """Converte o sinal de áudio novamente em bits analisando janelas de tempo e remove o ruído final."""
     amostras_por_simbolo = int(SAMPLE_RATE * DURACAO_SIMBOLO)
-    # Calcula quantos bits cabem no áudio gravado
     n_bits = len(sinal) // amostras_por_simbolo 
     
-    bits = []
+    energias_maximas = []
+    bits_decodificados = []
+    
     for i in range(n_bits):
         ini = i * amostras_por_simbolo
         janela = sinal[ini:ini + amostras_por_simbolo]
         if len(janela) < amostras_por_simbolo:
             break
-        e0 = goertzel_energia(janela, FREQ_BIT0)
-        e1 = goertzel_energia(janela, FREQ_BIT1)
-        bits.append(1 if e1 > e0 else 0)
-    return bits
+            
+        e0, e1 = obter_energias_fsk_fft(janela)
+        energias_maximas.append(max(e0, e1))
+        bits_decodificados.append(1 if e1 > e0 else 0)
+        
+    if not energias_maximas:
+        return []
+        
+    # Define 5% do volume máximo como "limiar de silêncio"
+    limiar_silencio = max(energias_maximas) * 0.05
+    
+    # Procura qual foi o último bit que superou o limiar de silêncio
+    ultimo_idx_valido = 0
+    for i in range(len(energias_maximas)):
+        if energias_maximas[i] > limiar_silencio:
+            ultimo_idx_valido = i
+            
+    # Retorna apenas até ao último bit audível real
+    return bits_decodificados[:ultimo_idx_valido + 1]
 
 
 def encontrar_inicio_fsk(sinal):
-    janela = int(SAMPLE_RATE * 0.01)  # Janela de 10ms
-    passo = int(SAMPLE_RATE * 0.002)  # Avança de 2 em 2ms
+    """Procura no áudio o ponto exato onde a transmissão começa para sincronizar os quadros."""
+    janela = int(SAMPLE_RATE * 0.01)
+    passo = int(SAMPLE_RATE * 0.002)
     
-    # Descobre o nível de ruído da sala no início da gravação
     energias = []
     for i in range(0, min(len(sinal) - janela, int(SAMPLE_RATE * 0.5)), passo):
         trecho = sinal[i:i + janela]
@@ -106,39 +134,73 @@ def encontrar_inicio_fsk(sinal):
     ruido_fundo = np.mean(energias) if energias else 0.0001
     limiar_deteccao = max(ruido_fundo * 5, 0.001)
 
-    # Varre o áudio procurando o primeiro som de 1200Hz ou 2200Hz
     for i in range(0, len(sinal) - janela, passo):
         trecho = sinal[i:i + janela]
         e0 = goertzel_energia(trecho, FREQ_BIT0)
         e1 = goertzel_energia(trecho, FREQ_BIT1)
         
         if max(e0, e1) > limiar_deteccao:
-            return i
+            return max(0, i - int(SAMPLE_RATE * 0.002))
 
     return 0
 
 
 def receber():
-    sinal = gravar() # Chama sem parâmetros
+    from common import gerar_silencio
+    
+    def live_decode(sinal_atual):
+        if len(sinal_atual) < int(SAMPLE_RATE * 0.1):
+            return []
+        inicio = encontrar_inicio_fsk(sinal_atual)
+        if inicio == 0 and np.max(np.abs(sinal_atual)) < 0.05:
+            return []
+        sinal_alinhado = sinal_atual[inicio:]
+        return demodular_bits(sinal_alinhado)
+        
+    sinal = gravar(live_decode)
     
     inicio = encontrar_inicio_fsk(sinal)
     sinal_alinhado = sinal[inicio:]
     
-    # Chama a demodulação com o sinal já alinhado
+    sinal_alinhado = np.concatenate([sinal_alinhado, gerar_silencio(0.5)])
+    
     bits = demodular_bits(sinal_alinhado)
     return validar_e_decodificar(bits)
 
 
 def validar_e_decodificar(bits):
+    """Aplica a regra de deteção de erros (CRC-8) e converte de volta para texto."""
+    
+    # Busca o preâmbulo para alinhar perfeitamente o início dos dados
+    idx_dados = 0
+    encontrou_preambulo = False
+    
+    # Varre a lista de bits procurando o padrão 10101011
+    for i in range(len(bits) - len(PREAMBULO_BITS) + 1):
+        if bits[i:i + len(PREAMBULO_BITS)] == PREAMBULO_BITS:
+            idx_dados = i + len(PREAMBULO_BITS)
+            encontrou_preambulo = True
+            break
+            
+    if encontrou_preambulo:
+        print(f"[SYNC] Preâmbulo encontrado. Descartando {idx_dados - len(PREAMBULO_BITS)} bits de ruído inicial.")
+    else:
+        print("[AVISO] Preâmbulo não encontrado de forma nítida. Tentando decodificar desde o início.")
+        
+    # Corta os bits para começar estritamente após o preâmbulo
+    bits_payload = bits[idx_dados:]
+
     dados_validos = []
     quadros_ok = quadros_falha = 0
     i = idx = 0
     
-    # 1. Transforma a lista de bits [0, 1, 0...] numa string legível "010..."
-    bits_recebidos_str = "".join(str(b) for b in bits)
+    bits_recebidos_str = "".join(str(b) for b in bits_payload)
 
-    while i + 16 <= len(bits):
-        dados, crc_recebido = bits[i:i + 8], bits[i + 8:i + 16]
+    # Decodifica os quadros a partir do payload
+    while i + 16 <= len(bits_payload):
+        dados = bits_payload[i:i + 8]
+        crc_recebido = bits_payload[i + 8:i + 16]
+        
         if crc_recebido == crc8(dados):
             quadros_ok += 1
             dados_validos.extend(dados)
@@ -148,8 +210,7 @@ def validar_e_decodificar(bits):
         i += 16
         idx += 1
 
-    # --- LÓGICA DE QUADRO INCOMPLETO (MÉTODO 2: 16 BITS) ---
-    bits_sobrando = len(bits) - i
+    bits_sobrando = len(bits_payload) - i
     if bits_sobrando > 0:
         bits_faltantes = 16 - bits_sobrando
         print(f"[AVISO] O quadro {idx + 1} não está completo (faltam {bits_faltantes} bits).")
@@ -163,10 +224,10 @@ def validar_e_decodificar(bits):
         # Mostra o que conseguiu decodificar mesmo com falhas ou quadros incompletos
         print(f"[RESULTADO PARCIAL] {quadros_ok} quadro(s) OK. Mensagem interceptada: {texto!r} | Bits: {bits_recebidos_str}") 
     else:
-        if len(bits) > 0:
+        if len(bits_payload) > 0:
             print(f"[RESULTADO] {quadros_ok} quadro(s) OK, {quadros_falha} quadro(s) com FALHA. | Bits: {bits_recebidos_str}")
         else:
-            print(f"[RESULTADO] Nenhum bit detectado.")
+            print(f"[RESULTADO] Nenhum bit de dados detectado.")
 
     return texto, quadros_ok, quadros_falha
 
@@ -178,8 +239,11 @@ def exibir_estatisticas_fsk(texto_enviado):
     
     bits_por_quadro = 16  # 8 bits dados + 8 bits CRC-8
     
-    # Tempo total = Preâmbulo + Silêncio de pausa (0.15s) + Bits de dados/CRC
-    tempo_overhead = PREAMBLE_DUR + 0.15
+    tempo_preambulo = len(PREAMBULO_BITS) * DURACAO_SIMBOLO
+    
+    
+    tempo_overhead = 0.60 + tempo_preambulo
+    
     tempo_dados_crc = num_caracteres * bits_por_quadro * DURACAO_SIMBOLO
     tempo_total = tempo_overhead + tempo_dados_crc
     

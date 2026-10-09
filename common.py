@@ -12,10 +12,6 @@ import numpy as np
 SAMPLE_RATE = 44100           # Hz
 CANAIS = 1                    # mono
 
-# Tom de sincronismo (marca o início de uma transmissão para os dois métodos)
-PREAMBLE_FREQ = 3000           # Hz
-PREAMBLE_DUR = 0.25             # s
-
 
 def gerar_tom(freq, duracao, amplitude=0.6, fade=0.003):
     """Gera um tom senoidal puro com fade in/out para evitar estalos (cliques) indesejados."""
