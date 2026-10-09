@@ -51,11 +51,15 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 
 ## Explicação do Método 2:  
 
-No 'Método 2', é utilizada uma abordagem mais avançada para a transmissão de dados. Aplica-se a técnica de modulação FSK (Frequency-Shift Keying), utilizando tons de 2000 Hz para representar o bit 0 e 3500 Hz para o bit 1, com 0,04 segundos de duração por símbolo. O texto é dividido em quadros de 16 bits, sendo 8 bits de dados e 8 bits de verificação de redundância cíclica (CRC-8).
+O Método 2 representa uma abordagem de comunicação acústica digital de maior desempenho e confiabilidade, operando através da modulação por chaveamento de frequência (2-FSK — Binary Frequency-Shift Keying) acoplada a um mecanismo avançado de detecção de erros na camada de enlace (CRC-8).
+Neste método, os dados são transmitidos em quadros estruturados de 16 bits (8 bits de carga útil de dados + 8 bits de verificação de redundância).
+**A modulação 2-FSK** mapeia diretamente os bits binários em frequências senoidais puras no domínio da frequência, sedo o bit 0 transmitido como um tom senoidal de 4000 Hz. O bit 1 e transmitido como um tom senoidal de 5000 Hz. Onde tem uma duração do Símbolo Fixada em 0,08 segundos por bit, permitindo uma taxa de transmissão substancialmente mais rápida que o Método 1.
 
-Para a demodulação, é usado o algoritmo de Goertzel, onde o áudio é fatiado em janelas de 0,04 segundos. Ele atua como um filtro matemático altamente eficiente, calculando a energia apenas nas frequências-alvo. A frequência que apresentar o maior valor de energia no cálculo define se aquele bloco de som representa um '0' ou um '1'.
+Na **demodulacao** ocorre a recuperação do sinal ocorre por meio do fatiamento contínuo do áudio em janelas temporais. A análise de frequência é realizada individualmente para cada janela usando a Transformada Rápida de **Fourier (FFT):** a FFT converte o trecho de áudio do domínio do tempo para o domínio da frequência. O algoritmo extrai a densidade de energia acumulada especificamente em 4000 Hz e 5000 Hz, com isso ele faz uma comparacao das energias e com isso e demodulada como bit 1 ou 0.
 
-O algoritmo CRC-8 (Cyclic Redundancy Check de 8 bits) recebe o quadro de 16 bits, separa os 8 bits de dados e refaz a divisão polinomial. Se o resto da divisão for zero, significa que os dados não sofreram interferência. Caso contrário, a validação matemática falha e o sistema descarta o quadro corrompido. 
+O **CRC-8 (Cyclic Redundancy Check)** é um método matemático altamente robusto baseado em divisão polinomial em aritmética de módulo 2.
+**Na Transmissão:** O algoritmo pega os 8 bits de dados (mensagem) e aplica o polinômio gerador padrão $x^8 + x^2 + x + 1$ (representado pelo hexadecimal 0x07). O resto dessa divisão resulta em um byte de verificação (8 bits de CRC), que é anexado ao final do quadro, totalizando 16 bits.
+**Na Recepção:** Ao receber o quadro de 16 bits pelo ar, o receptor divide a sequência completa pelo mesmo polinômio gerador. Se o resto da divisão for igual a zero (ou o CRC recalculado for idêntico ao recebido), matematicamente prova-se que o quadro não sofreu interferências de fase, ecos ou ruídos durante a propagação no ar, caso contrario a validação falha e o quadro corrompido é rejeitado.
 
 ### Utilização - Transmissão
 O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem', selecionando 1 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'.
