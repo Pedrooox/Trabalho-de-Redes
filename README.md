@@ -1,4 +1,4 @@
-# Fundamentação Teórica 
+## Fundamentação Teórica 
 
 
 ## Modelo ISO OSI
@@ -74,14 +74,14 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem' ou 2 para 'Receber mensagem' e 0 para 'Sair', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 2 para o 'Método 2'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
 
 
-# Divisão de Tarefas para cada membro da equipe:  
+## Divisão de Tarefas para cada membro da equipe:  
 **Eduardo Giroto:** Planejameto, video e software (fez a base do metodo 1 e main.py)
 **Pedro Frederico:** Planejamento, video e testador  
 **Nicolas Nakaie:**  Planejamento, testador, pesquisa, software ( metodo 2) 
 **Kauã Lopes:** Pesquisa, documentacao, planejamento e software ( arquivos de teste e metodo 2 ). 
 **Walter Aurélio:** Planejamento, documentacao e testador 
 
-# Desafios, Problemas e Soluções:  
+## Desafios, Problemas e Soluções:  
 ### Validação e Deteção de Corrupção de Dados (Paridade)
 Problema: Ruidos acusticos indesejados, como cliques de teclado e ecos no recinto podiam inverter bits ou dificultar a interpretação pelo receptor.
 Solução: A funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit reservado para a pariedade. O algoritmo calcula se a quantidade de bits '1' é par. Caso algum bit seje perdido ou invertido, o calculo de pariedade identifica o erro e retorna que o quadro está corrompido. Isso impede que seje exibida uma mensagem errada. 
@@ -90,11 +90,11 @@ Solução: A funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit re
 Problema: Caso a gravacao fosse interrompida ou desse erro por causa de ruido, ocorria um desalinhamento na contagem dos bits, o que causava problemas ao tentar converter os bytes incompletos.
 Solução: Foi implementada uma lógica de validação parcial nos dois metodos. O código agora contabiliza os quadros íntegros e transcreve a mesnsagem (caracter e bits) obtida até o limite válido. Ao chegar nos quadros corrompidos o sistema um aviso detalhando o erro e indincando a quantidade de bits que faltaram para fechar o quadro. 
 
-# Declaração do Uso de Inteligência Artificial: 
+## Declaração do Uso de Inteligência Artificial: 
 Utilizamos as Inteligências Artificiais para gerar os códigos iniciais e suas implementações, assim como alterações e correções feitas durante o processo e desenvolvimento do trabalho. As IAs também foram utilizadas como ferramenta para estudos e explicações para maior compreensão dos códigos e do trabalho como um todo.
 Claude: Códigos iniciais;
 Google Gemini: Novos códigos, pesquisas, dúvidas, alterações dos códigos;
 Google Antigravity: Utilizado junto ao VS Code para alterações dos códigos e correção de erros.
 
-# Conclusão:  
-O trabalho nos permitiu, como grupo, observar as principais dificuldades e desafios presentes na camada Física. Ao utilizar frequências sonoras para transportar dados, os ruídos e frequências externas são um empecilho que atrapalham o programa de ler os sons e reconhecer a mensagem transmitida, assim como precisamos de formas dentro do código para controle de erros, como o bit de paridade par e CRC-8. Tivemos bastante trabalho com o metodo 2, onde foi necessario refazer-lo para que conseguissemoos um resultado empolgante, onde foi trocado o algoritimo de goertzel para o FFT, e melhoras o nosso entendimento com o fsk e crc-8. De forma prática aprendemos como contornar essas interferências e buscar através de tentativa e erro, pesquisa e alterações no código, as melhores maneiras de receber e transmitir esses dados com maior precisão.
+## Conclusão:  
+O trabalho nos permitiu, como grupo, observar as principais dificuldades e desafios presentes na camada Física. Ao utilizar frequências sonoras para transportar dados pelo ar, os ruídos e frequências externas são um empecilho que atrapalham na recepção e decodificação da mensagem. Para contornar essas limitações do meio, tornou-se fundamental a implementação de mecanismos de controle de erros via software, como o Bit de Paridade Par e o CRC-8. O desenvolvimento do Método 2 exigiu especial atenção e dedicação. A refatoração do código — substituindo a abordagem inicial pela Transformada Rápida de Fourier (FFT) — foi um passo decisivo para alcançarmos um resultado robusto e preciso. De forma prática aprendemos como contornar essas interferências e buscar através de tentativa e erro, pesquisa e alterações no código, as melhores estratégias para transmitir e receber dados com alta precisão e confiabilidade. 
