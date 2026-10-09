@@ -55,7 +55,11 @@ O Método 2 representa uma abordagem de comunicação acústica digital de maior
 Neste método, os dados são transmitidos em quadros estruturados de 16 bits (8 bits de carga útil de dados + 8 bits de verificação de redundância).
 **A modulação 2-FSK** mapeia diretamente os bits binários em frequências senoidais puras no domínio da frequência, sedo o bit 0 transmitido como um tom senoidal de 4000 Hz. O bit 1 e transmitido como um tom senoidal de 5000 Hz. Onde tem uma duração do Símbolo Fixada em 0,08 segundos por bit, permitindo uma taxa de transmissão substancialmente mais rápida que o Método 1.
 
+### Demodulacao (FFT)
+
 Na **demodulacao** ocorre a recuperação do sinal ocorre por meio do fatiamento contínuo do áudio em janelas temporais. A análise de frequência é realizada individualmente para cada janela usando a Transformada Rápida de **Fourier (FFT):** a FFT converte o trecho de áudio do domínio do tempo para o domínio da frequência. O algoritmo extrai a densidade de energia acumulada especificamente em 4000 Hz e 5000 Hz, com isso ele faz uma comparacao das energias e com isso e demodulada como bit 1 ou 0.
+
+### Detecção de Erros via CRC-8 (Cyclic Redundancy Check)
 
 O **CRC-8 (Cyclic Redundancy Check)** é um método matemático altamente robusto baseado em divisão polinomial em aritmética de módulo 2.
 **Na Transmissão:** O algoritmo pega os 8 bits de dados (mensagem) e aplica o polinômio gerador padrão $x^8 + x^2 + x + 1$ (representado pelo hexadecimal 0x07). O resto dessa divisão resulta em um byte de verificação (8 bits de CRC), que é anexado ao final do quadro, totalizando 16 bits.
