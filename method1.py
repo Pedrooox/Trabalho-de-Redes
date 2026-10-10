@@ -13,7 +13,7 @@ import numpy as np
 from common import (SAMPLE_RATE, gerar_click, gerar_silencio, tocar, gravar,
                      texto_para_bits, bits_para_texto, bit_de_paridade_par)
 
-SILENCIO_ENTRE = 0.30     # s de silêncio antes/depois de cada símbolo (bit)
+SILENCIO_ENTRE = 0.35     # s de silêncio antes/depois de cada símbolo (bit)
 GAP_ENTRE_BATIDAS = 0.23   # s de silêncio entre as 2 batidas do bit 1
 
 
