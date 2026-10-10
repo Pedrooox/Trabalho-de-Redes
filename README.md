@@ -1,5 +1,3 @@
-
-
 ## Fundamentação Teórica 
 
 ### Modelo ISO OSI
@@ -80,18 +78,18 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 
 
 ## Divisão de Tarefas para cada membro da equipe:  
-**Eduardo Giroto:** Planejameto, video e software (fez a base do metodo 1 e main.py)
-**Pedro Frederico:** Planejamento, video e testador  
-**Nicolas Nakaie:**  Planejamento, testador, pesquisa, software ( metodo 2) 
-**Kauã Lopes:** Pesquisa, documentacao, planejamento e software ( arquivos de teste e metodo 2 ). 
-**Walter Aurélio:** Planejamento, documentacao e testador 
+**Eduardo Giroto:** Planejamento, produção de vídeo e desenvolvimento de software (arquitetura base do Método 1, `main.py` e `common.py`).
+**Kauã Lopes:** Pesquisa técnica, documentação do projeto, planejamento e desenvolvimento de software (Método 2).
+**Nicolas Nakaie:** Planejamento, pesquisa técnica, desenvolvimento de software (Método 2) e testes do sistema.
+**Pedro Frederico:** Planejamento, produção de vídeo e testes do sistema.
+**Walter Aurélio:** Planejamento, documentação do projeto e testes do sistema.
 
 ## Desafios, Problemas e Soluções:  
 ### Validação e Deteção de Corrupção de Dados (Paridade)
 Problema: Ruidos acusticos indesejados, como cliques de teclado e ecos no recinto podiam inverter bits ou dificultar a interpretação pelo receptor.
 Solução: A funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit reservado para a pariedade. O algoritmo calcula se a quantidade de bits '1' é par. Caso algum bit seje perdido ou invertido, o calculo de pariedade identifica o erro e retorna que o quadro está corrompido. Isso impede que seje exibida uma mensagem errada. 
 
-### Tratamento de quadors incompletos
+### Tratamento de quadros incompletos
 Problema: Caso a gravacao fosse interrompida ou desse erro por causa de ruido, ocorria um desalinhamento na contagem dos bits, o que causava problemas ao tentar converter os bytes incompletos.
 Solução: Foi implementada uma lógica de validação parcial nos dois metodos. O código agora contabiliza os quadros íntegros e transcreve a mesnsagem (caracter e bits) obtida até o limite válido. Ao chegar nos quadros corrompidos o sistema um aviso detalhando o erro e indincando a quantidade de bits que faltaram para fechar o quadro. 
 
