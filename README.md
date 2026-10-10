@@ -29,7 +29,7 @@ Mesmo que a verificação da integridade dos bits seja uma função da Camada de
 
 ### Pré-requisitos
     
-O código exige o interpretador Python e o pip instalado e as bibliotecas `numpy` (para manipulação de arrays e processamento digital de sinais) e `sounddevice` (para reprodução e gravação de áudio via interface de som).
+Para executar o projeto, é necessário ter o Python 3.8+ e o pip instalados, além das bibliotecas NumPy (manipulação de arrays e processamento digital de sinais) e sounddevice (reprodução e gravação de áudio). Todas as dependências podem ser instaladas executando pip install -r requirements.txt.
 
 ## Engenharia e Arquitetura das Soluções
 
