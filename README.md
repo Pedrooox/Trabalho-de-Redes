@@ -107,4 +107,4 @@ O trabalho nos permitiu, como grupo, observar as principais dificuldades e desaf
 ### Licença
 Este projeto está licenciado sob a Licença Open-Source **MIT** — consulte o arquivo [LICENSE](LICENSE) para obter mais detalhes.
 
-[![Vídeo de Demonstração](https://img.youtube.com/vidLUEzW32w2Q/maxresdefault.jpg)](https://www.youtube.com/watch?v=dLUEzW32w2Q)
+[![Vídeo de Demonstração](https://img.youtube.com/vi/dLUEzW32w2Q/hqdefault.jpg)](https://www.youtube.com/watch?v=dLUEzW32w2Q)
