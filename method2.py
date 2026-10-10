@@ -3,6 +3,10 @@ Método 2 - Modulação "Morse Frequencial" (2-FSK) + Detecção de erros via CR
  -  (Bit 0) -> Tom de 2000 Hz
  -  (Bit 1) -> Tom de 3500 Hz
 Demodulação feita através da Análise de Espetro (FFT).
+
+Licença: MIT License
+Copyright (c) 2026 The Fish
+Consulte o arquivo LICENSE na raiz do projeto para os termos completos.
 """
 
 import numpy as np

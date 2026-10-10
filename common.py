@@ -1,6 +1,10 @@
 """
 Camada Física - Utilitários comuns de áudio
 Comunicação acústica entre dispositivos usando a placa de som (meio: ondas sonoras).
+
+Licença: MIT License
+Copyright (c) 2026 The Fish
+Consulte o arquivo LICENSE na raiz do projeto para os termos completos.
 """
 
 import numpy as np

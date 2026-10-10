@@ -3,6 +3,10 @@ Método 1 (Obrigatório) - Padronizado e Interoperável
 Quadro de 9 bits (8 dados + 1 bit de paridade par), transmitido por impacto sonoro:
   bit 0 -> silêncio + 1 batida + silêncio
   bit 1 -> silêncio + 2 batidas consecutivas + silêncio
+
+Licença: MIT License
+Copyright (c) 2026 The Fish
+Consulte o arquivo LICENSE na raiz do projeto para os termos completos.
 """
 
 import numpy as np

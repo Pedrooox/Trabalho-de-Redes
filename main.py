@@ -2,10 +2,11 @@
 Comunicação Acústica entre Dispositivos - Camada Física (Modelo ISO/OSI)
 Ponto de entrada: escolha do método (1 ou 2) e do modo (transmissor/receptor).
 
-Requisitos: pip install numpy sounddevice
+Licença: MIT License
+Copyright (c) 2026 The Fish
+Consulte o arquivo LICENSE na raiz do projeto para os termos completos.
 """
 
-import sys
 import method1
 import method2
 
