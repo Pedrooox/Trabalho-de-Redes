@@ -1,3 +1,7 @@
+# Trabalho de Redes - Camada Física
+
+Este projeto consiste no desenvolvimento de um software para transmissão e recepção de dados digitais via ondas sonoras em meio acústico, explorando de forma prática os conceitos e desafios da Camada Física.
+
 ## Fundamentação Teórica 
 
 ### Modelo ISO OSI
@@ -51,7 +55,7 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 ### Utilização - Recepção
 O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e então executar o comando 'python main.py' o terminal exibirá uma opção de escolha, 1 para 'Transmitir mensagem', 2 para 'Receber mensagem'e 0 para 'sair', selecionando 2 e pressionando a tecla Enter, haverá novamente a opção de escolha, mas agora entre 'Método 1' e 'Método 2', nesse caso, selecionando 1 para o 'Método 1'. Ao pressionar Enter, o sistema iniciará a gravação, parando após pressionar novamente o Enter exibindo o resultado obtido.
 
-## Explicação do Método 2:  
+### Explicação do Método 2:  
 
 O Método 2 representa uma abordagem de comunicação acústica digital de maior desempenho e confiabilidade, operando através da modulação por chaveamento de frequência (2-FSK — Binary Frequency-Shift Keying) acoplada a um mecanismo avançado de detecção de erros na camada de enlace (CRC-8).
 Neste método, os dados são transmitidos em quadros estruturados de 16 bits (8 bits de carga útil de dados + 8 bits de verificação de redundância).
@@ -85,7 +89,7 @@ O usuário precisa estar com o terminal aberto, dentro das pastas corretas, e en
 **Walter Aurélio:** Planejamento, documentação do projeto e testes do sistema.
 
 ## Desafios, Problemas e Soluções:  
-### Validação e Deteção de Corrupção de Dados (Paridade)
+## Validação e Deteção de Corrupção de Dados (Paridade)
 Problema: Ruidos acusticos indesejados, como cliques de teclado e ecos no recinto podiam inverter bits ou dificultar a interpretação pelo receptor.
 Solução: A funcionalidade "Pariedade" funciona com 9 bits, sendo o nono bit reservado para a pariedade. O algoritmo calcula se a quantidade de bits '1' é par. Caso algum bit seje perdido ou invertido, o calculo de pariedade identifica o erro e retorna que o quadro está corrompido. Isso impede que seje exibida uma mensagem errada. 
 
